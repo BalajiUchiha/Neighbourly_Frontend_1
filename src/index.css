@@ -1,0 +1,350 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+@layer base {
+  body {
+    background-color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    color: #0D1B2A;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+
+  /* ── Page background ─────────────────────────── */
+  .page-bg {
+    background: radial-gradient(ellipse 120% 60% at 50% -10%, #dceefb 0%, #F0F6FC 45%, #FFFFFF 100%);
+    min-height: 100vh;
+  }
+
+  /* ── Card ────────────────────────────────────── */
+  .card {
+    background: #FFFFFF;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 24px;
+    box-shadow:
+      0 1px 2px rgba(43, 126, 193, 0.04),
+      0 8px 24px -8px rgba(43, 126, 193, 0.12),
+      0 32px 48px -16px rgba(43, 126, 193, 0.10);
+  }
+
+  /* ── Primary button ──────────────────────────── */
+  .btn-primary {
+    background: linear-gradient(135deg, #2B7EC1 0%, #1A4F7A 100%);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    width: 100%;
+    cursor: pointer;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.15) inset,
+      0 8px 20px -6px rgba(43, 126, 193, 0.45);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.15) inset,
+      0 14px 28px -8px rgba(43, 126, 193, 0.55);
+    background: linear-gradient(135deg, #348bd4 0%, #1c588a 100%);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.10) inset,
+      0 4px 10px -4px rgba(43, 126, 193, 0.35);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* ── Outline button ──────────────────────────── */
+  .btn-outline {
+    background: transparent;
+    color: #2B7EC1;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 14px;
+    padding: 13px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    border-color: #2B7EC1;
+    background: rgba(43, 126, 193, 0.05);
+    color: #1A4F7A;
+  }
+
+  .btn-outline:active:not(:disabled) {
+    background: rgba(43, 126, 193, 0.08);
+  }
+
+  .btn-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ── Input wrapper (use for icon + field combos) */
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-icon-left {
+    position: absolute;
+    left: 14px;
+    color: #94A3B8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease;
+  }
+
+  .input-icon-right {
+    position: absolute;
+    right: 14px;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .input-icon-right:hover {
+    color: #2B7EC1;
+  }
+
+  /* Focus-within: tint the icons */
+  .input-wrapper:focus-within .input-icon-left {
+    color: #2B7EC1;
+  }
+
+  /* ── Input field ─────────────────────────────── */
+  .input-field {
+    background: #F8FAFC;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 14px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #0D1B2A;
+    width: 100%;
+    padding: 13px 44px 13px 42px; /* space for icons */
+    line-height: 1.5;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+  }
+
+  /* Variant: no left icon */
+  .input-field.no-left-icon {
+    padding-left: 16px;
+  }
+
+  /* Variant: no right icon */
+  .input-field.no-right-icon {
+    padding-right: 16px;
+  }
+
+  .input-field:focus {
+    background: #FFFFFF;
+    border-color: #2B7EC1;
+    box-shadow: 0 0 0 3px rgba(43, 126, 193, 0.12), 0 2px 8px rgba(43, 126, 193, 0.08);
+    outline: none;
+  }
+
+  .input-field::placeholder {
+    color: #B0BEC9;
+    font-weight: 400;
+  }
+
+  .input-field:hover:not(:focus) {
+    border-color: #B8CDDE;
+    background: #F4F8FC;
+  }
+
+  /* Error state */
+  .input-field.error {
+    border-color: #E53E3E;
+    background: #FFF5F5;
+  }
+
+  .input-field.error:focus {
+    box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.12);
+  }
+
+  /* ── Form label ──────────────────────────────── */
+  .form-label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #64748B;
+    margin-bottom: 8px;
+  }
+
+  /* ── Helper / error text below a field ──────── */
+  .field-hint {
+    font-size: 12.5px;
+    color: #94A3B8;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  .field-hint.error {
+    color: #E53E3E;
+  }
+
+  /* ── Link style ──────────────────────────────── */
+  .link {
+    color: #2B7EC1;
+    font-weight: 500;
+    font-size: 13.5px;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .link:hover {
+    color: #1A4F7A;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ── Divider with label ──────────────────────── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #CBD5E1;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #E2E8F0;
+  }
+
+  /* ── Logo glow ───────────────────────────────── */
+  .logo-glow {
+    filter: drop-shadow(0 4px 16px rgba(43, 126, 193, 0.28));
+  }
+
+  /* ── Form group spacing ──────────────────────── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* ── Auth card specific padding ─────────────── */
+  
+/*Until the login page*/
+  .auth-card {
+    padding: 36px 32px 40px;
+  }
+
+  @media (max-width: 400px) {
+    .auth-card {
+      padding: 28px 20px 32px;
+    }
+  }
+
+  /* ── Button Highlighting Sync ── */
+  .btn-highlighted {
+    box-shadow: 0 0 0 5px rgba(43, 126, 193, 0.4) !important;
+    transform: scale(1.04) !important;
+    transition: all 0.3s ease !important;
+    animation: pulse-glow 0.8s infinite !important;
+  }
+
+  @keyframes pulse-glow {
+    0% { box-shadow: 0 0 0 3px rgba(43,126,193,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(43,126,193,0.15); }
+    100% { box-shadow: 0 0 0 3px rgba(43,126,193,0.4); }
+  }
+
+  /* ── Waveform Animation ── */
+  .waveform-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 18px;
+  }
+
+  .waveform-bar {
+    width: 3px;
+    height: 100%;
+    background-color: #2B7EC1;
+    border-radius: 1.5px;
+    transform: scaleY(0.35);
+    transition: transform 0.2s ease;
+  }
+
+  .waveform-container.playing .waveform-bar {
+    animation: pulse-bar 1.2s ease-in-out infinite;
+  }
+
+  .waveform-container.playing .waveform-bar:nth-child(1) { animation-delay: 0.1s; }
+  .waveform-container.playing .waveform-bar:nth-child(2) { animation-delay: 0.35s; }
+  .waveform-container.playing .waveform-bar:nth-child(3) { animation-delay: 0.6s; }
+  .waveform-container.playing .waveform-bar:nth-child(4) { animation-delay: 0.2s; }
+  .waveform-container.playing .waveform-bar:nth-child(5) { animation-delay: 0.45s; }
+
+  @keyframes pulse-bar {
+    0%, 100% {
+      transform: scaleY(0.35);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  /* ── Post Creation Animations ── */
+  @keyframes mic-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(43,126,193,0.4); }
+    70% { box-shadow: 0 0 0 20px rgba(43,126,193,0); }
+    100% { box-shadow: 0 0 0 0 rgba(43,126,193,0); }
+  }
+  .mic-recording {
+    animation: mic-pulse 1.2s infinite;
+  }
+
+  @keyframes logo-float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  .logo-floating {
+    animation: logo-float 2s ease-in-out infinite;
+  }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in-up {
+    animation: fade-in-up 0.5s ease forwards;
+  }
+}
