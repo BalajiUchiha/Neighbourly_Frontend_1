@@ -10,6 +10,7 @@ import {
   Sparkles, Check, UserCheck, Clock, BadgeCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 function timeAgo(dateStr) {
@@ -24,11 +25,11 @@ function timeAgo(dateStr) {
 // ─── Story / Category Circles ─────────────────────────────────────────────────
 const STORIES = [
   { id: 'all',       label: 'All',        emoji: '🌐',  bg: ['#2B7EC1','#1A4F7A'], active: true  },
-  { id: 'forme',     label: 'For Me',     emoji: '✨',  bg: ['#8B5CF6','#6D28D9'], active: false },
-  { id: 'parttime',  label: 'Part Time',  emoji: '📅',  bg: ['#F59E0B','#D97706'], active: false },
+  { id: 'for_me',    label: 'For Me',     emoji: '✨',  bg: ['#8B5CF6','#6D28D9'], active: false },
+  { id: 'part_time', label: 'Part Time',  emoji: '📅',  bg: ['#F59E0B','#D97706'], active: false },
   { id: 'volunteer', label: 'Volunteer',  emoji: '🌿',  bg: ['#10B981','#059669'], active: false },
-  { id: 'nearby',    label: 'Nearby',     emoji: '📍',  bg: ['#EF4444','#DC2626'], active: false },
-  { id: 'skilled',   label: 'Skilled',    emoji: '🔧',  bg: ['#0EA5E9','#0284C7'], active: false },
+  { id: 'no_exp',    label: 'No Exp',     emoji: '🔰',  bg: ['#0EA5E9','#0284C7'], active: false },
+  { id: 'urgent',    label: 'Urgent',     emoji: '🚨',  bg: ['#EF4444','#DC2626'], active: false },
 ];
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -54,87 +55,6 @@ function Avatar({ name, photoUrl, size = 40, className = '' }) {
     </div>
   );
 }
-
-// ─── Mock nearby workers (shown inline mid-feed) ──────────────────────────────
-const NEARBY_WORKERS = [
-  { id:1, name:'Sana K.',  skill:'Helper',   rating:4.8, photo:null },
-  { id:2, name:'Raj M.',   skill:'Gardener', rating:4.9, photo:null },
-  { id:3, name:'Priya V.', skill:'Cook',     rating:4.7, photo:null },
-  { id:4, name:'Arun S.',  skill:'Plumber',  rating:4.6, photo:null },
-  { id:5, name:'Meena R.', skill:'Tailor',   rating:5.0, photo:null },
-];
-
-// ─── Mock Posts ───────────────────────────────────────────────────────────────
-const INITIAL_POSTS = [
-  {
-    id: 'p1',
-    poster: { name: 'CommunityCenter', role: 'Poster', rating: 4.9, photo: null },
-    timePosted: new Date(Date.now() - 2*3600000).toISOString(),
-    hasImage: true,
-    imageBg: 'linear-gradient(135deg,#134e1d 0%,#1e7a2f 35%,#8BC34A 70%,#e8b84b 100%)',
-    imageEmoji: '🌱',
-    aiText: 'Volunteer Gardeners Needed — join our community garden project this weekend! Help plant seasonal vegetables for 200+ local families. All skill levels welcome, tools provided.',
-    originalText: 'Need people for garden work this Sunday. Come help us plant veggies. Tools available.',
-    type: 'volunteer',
-    tags: [{ label:'Volunteer', color:'#059669', bg:'#ECFDF5' }, { label:'0.8 km', color:'#2B7EC1', bg:'#EBF5FF', icon:<Navigation size={9}/> }, { label:'Gardening', color:'#6D28D9', bg:'#F5F3FF' }],
-    likes: 18, comments: 6, saved: false, liked: false,
-    ctaLabel: 'Join',
-    distance: '0.8 km',
-  },
-  {
-    id: 'p2',
-    poster: { name: 'Arjun Mehta', role: 'Job Poster', rating: 4.7, photo: null },
-    timePosted: new Date(Date.now() - 5*3600000).toISOString(),
-    hasImage: false,
-    aiText: 'Urgently seeking a skilled plumber for a kitchen pipe burst. Competitive pay of ₹500–₹800 for approximately 2 hours of work. Immediate availability required.',
-    originalText: 'Pipe leak in kitchen. Need plumber asap. Will pay ₹500.',
-    type: 'job',
-    tags: [{ label:'Plumbing', color:'#0284C7', bg:'#E0F2FE' }, { label:'Urgent', color:'#D97706', bg:'#FFFBEB' }, { label:'1.2 km', color:'#2B7EC1', bg:'#EBF5FF', icon:<Navigation size={9}/> }],
-    wage: '₹500–800',
-    likes: 5, comments: 9, saved: false, liked: false,
-    ctaLabel: "I'm available",
-    distance: '1.2 km',
-  },
-  {
-    id: 'p3',
-    poster: { name: 'Divya Rajan', role: 'Poster', rating: 4.5, photo: null },
-    timePosted: new Date(Date.now() - 8*3600000).toISOString(),
-    hasImage: true,
-    imageBg: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 40%,#0f3460 70%,#533483 100%)',
-    imageEmoji: '📚',
-    aiText: 'Looking for a dedicated home tutor for 8th grade CBSE Maths & Science. Preferred timings: weekdays 5–7 PM. Excellent compensation of ₹8,000/month.',
-    originalText: 'Need tutor for my kid. 8th class. Maths and science. Weekday evenings. Good pay.',
-    type: 'job',
-    tags: [{ label:'Teaching', color:'#6D28D9', bg:'#F5F3FF' }, { label:'CBSE', color:'#059669', bg:'#ECFDF5' }, { label:'2.1 km', color:'#2B7EC1', bg:'#EBF5FF', icon:<Navigation size={9}/> }],
-    wage: '₹8,000/month',
-    likes: 22, comments: 11, saved: true, liked: false,
-    ctaLabel: "I'm interested",
-    distance: '2.1 km',
-  },
-  {
-    id: 'p4',
-    poster: { name: 'Meena Sundaram', role: 'Volunteer', rating: 4.9, photo: null },
-    timePosted: new Date(Date.now() - 1.5*3600000).toISOString(),
-    hasImage: false,
-    aiText: 'Help needed this Sunday (10 AM–12 PM) to assist an elderly neighbor relocate furniture to the ground floor. Refreshments provided. Your kindness makes a difference 🙏',
-    originalText: 'Elderly aunty needs help moving stuff downstairs. This Sunday morning. Tea provided.',
-    type: 'volunteer',
-    tags: [{ label:'Volunteer', color:'#059669', bg:'#ECFDF5' }, { label:'Moving', color:'#D97706', bg:'#FFFBEB' }, { label:'0.3 km', color:'#2B7EC1', bg:'#EBF5FF', icon:<Navigation size={9}/> }],
-    likes: 31, comments: 7, saved: false, liked: false,
-    ctaLabel: 'I will help',
-    distance: '0.3 km',
-  },
-];
-
-// ─── Active (My) Post ─────────────────────────────────────────────────────────
-const MY_POST = {
-  aiText: 'Home Cleaning Help — seeking a reliable helper for a thorough 2BHK apartment cleaning tomorrow morning. Professional approach preferred.',
-  originalText: 'Need someone to clean my house tomorrow. 2BHK. Morning time.',
-  type: 'Helper',
-  wage: '₹500/day',
-  time: 'Tomorrow 7AM',
-  applied: 3,
-};
 
 // ─── Story Circle ─────────────────────────────────────────────────────────────
 function StoryCircle({ story, active, onClick }) {
@@ -195,17 +115,18 @@ function TagChip({ tag }) {
 
 // ─── Matching Neighbours Strip ────────────────────────────────────────────────
 function MatchingNeighbours({ workers }) {
+  if (!workers || workers.length === 0) return null;
   return (
     <div className="mt-3">
       <p className="text-[12px] font-bold text-text-secondary mb-2">Matching Neighbors</p>
       <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
         {workers.map(w => (
           <div key={w.id} className="flex flex-col items-center gap-1.5 flex-shrink-0">
-            <Avatar name={w.name} size={52} />
+            <Avatar name={w.name} photoUrl={w.photo_url} size={52} />
             <p className="text-[11px] font-semibold text-text-primary text-center">{w.name}</p>
             <div className="flex items-center gap-0.5">
               <Star size={9} fill="#F59E0B" className="text-amber-400" />
-              <span className="text-[10px] text-text-secondary">{w.rating}</span>
+              <span className="text-[10px] text-text-secondary">{w.worker_rating || 'New'}</span>
             </div>
             <button className="px-3.5 py-1 rounded-full text-[11px] font-bold border border-primary text-primary transition-colors hover:bg-primary hover:text-white">
               Invite
@@ -220,6 +141,8 @@ function MatchingNeighbours({ workers }) {
 // ─── My Active Post Card ──────────────────────────────────────────────────────
 function ActivePostCard({ post }) {
   const [tab, setTab] = useState('ai');
+  
+  if (!post) return null;
 
   return (
     <div className="mx-3 mt-3 rounded-2xl bg-white overflow-hidden"
@@ -232,7 +155,7 @@ function ActivePostCard({ post }) {
         </span>
         <span className="flex items-center gap-1 text-[11px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse" />
-          Open · {post.applied} applied
+          Open · {post.applications_count || 0} applied
         </span>
       </div>
 
@@ -243,14 +166,12 @@ function ActivePostCard({ post }) {
 
       {/* Content */}
       <div className="px-4 py-3">
-        <h3 className="font-bold text-[14px] text-text-primary leading-snug mb-1">Home Cleaning Help</h3>
         <p className="text-[12.5px] text-text-secondary leading-relaxed">
-          {tab === 'ai' ? post.aiText : post.originalText}
+          {tab === 'ai' ? (post.ai_text || post.aiText) : (post.raw_input_text || post.originalText)}
         </p>
         <div className="flex items-center gap-2 mt-2.5">
           <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">{post.type}</span>
           <span className="text-[12px] font-bold text-primary">{post.wage}</span>
-          <span className="text-[11px] font-bold text-amber-600 ml-auto">{post.time}</span>
         </div>
       </div>
 
@@ -262,51 +183,38 @@ function ActivePostCard({ post }) {
       </div>
 
       {/* Matching neighbours */}
-      <div className="px-4 pb-4 border-t border-[#F5F8FC] pt-3">
-        <MatchingNeighbours workers={NEARBY_WORKERS.slice(0, 3)} />
-      </div>
-    </div>
-  );
-}
-
-// ─── Inline "More Near You" Worker Strip ──────────────────────────────────────
-function NearYouStrip() {
-  return (
-    <div className="mx-3 my-2 bg-white rounded-2xl px-4 py-3"
-      style={{ border: '1px solid #E2EDF6', boxShadow: '0 2px 12px rgba(43,126,193,0.07)' }}>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[13px] font-bold text-text-primary flex items-center gap-1.5">
-          More near you
-          <span className="w-4 h-4 rounded-full bg-blue-50 flex items-center justify-center text-[9px] text-primary font-black">ⓘ</span>
-        </span>
-      </div>
-      <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
-        {NEARBY_WORKERS.map(w => (
-          <div key={w.id} className="flex flex-col items-center gap-1.5 flex-shrink-0">
-            <div className="relative">
-              <Avatar name={w.name} size={54} />
-              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white bg-green-400" />
-            </div>
-            <p className="text-[11px] font-semibold text-text-primary text-center">{w.name}</p>
-            <p className="text-[10px] text-text-secondary -mt-1">{w.skill}</p>
-            <div className="flex items-center gap-0.5">
-              <Star size={9} fill="#F59E0B" className="text-amber-400" />
-              <span className="text-[10px] text-text-secondary">{w.rating}</span>
-            </div>
-            <button className="px-3.5 py-1 rounded-full text-[11px] font-bold border border-primary text-primary hover:bg-primary hover:text-white transition-colors">
-              Invite
-            </button>
-          </div>
-        ))}
-      </div>
+      {post.suggested_workers && post.suggested_workers.length > 0 && (
+        <div className="px-4 pb-4 border-t border-[#F5F8FC] pt-3">
+          <MatchingNeighbours workers={post.suggested_workers.slice(0, 3)} />
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Post Card (feed) ─────────────────────────────────────────────────────────
-function PostCard({ post, onLike, onSave }) {
+function PostCard({ post, isOwnPost, onLike, onSave }) {
   const [tab, setTab] = useState('ai');
+  const navigate = useNavigate();
   const isVolunteer = post.type === 'volunteer';
+
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleWorkerCardClick = (worker, postId) => {
+    navigate(`/post/${postId}/ask-worker/${worker.id}`);
+  };
+
+  const handleInviteWorker = async (workerId, postId) => {
+    try {
+      await api.post('/api/rag/invite', { worker_id: workerId, post_id: postId });
+    } catch (e) {}
+    showToast('Invite sent to worker');
+  };
 
   return (
     <div className="bg-white" style={{ borderBottom: '8px solid #F0F4F8' }}>
@@ -314,21 +222,25 @@ function PostCard({ post, onLike, onSave }) {
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-3">
-          <Avatar name={post.poster.name} size={40} />
+          <Avatar name={post.poster?.name} photoUrl={post.poster?.photo_url} size={40} />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bold text-[14px] text-text-primary">{post.poster.name}</span>
-              <span className="text-[10px] font-semibold text-text-secondary bg-slate-100 px-1.5 py-0.5 rounded-full">
-                {post.poster.role}
-              </span>
-              <span className="flex items-center gap-0.5 text-[11px] font-bold text-amber-500">
-                <Star size={10} fill="#F59E0B" className="text-amber-400" />
-                {post.poster.rating}
-              </span>
+              <span className="font-bold text-[14px] text-text-primary">{post.poster?.name}</span>
+              {post.poster?.role && (
+                <span className="text-[10px] font-semibold text-text-secondary bg-slate-100 px-1.5 py-0.5 rounded-full">
+                  {post.poster.role}
+                </span>
+              )}
+              {(post.poster?.worker_rating || post.poster?.poster_rating) && (
+                <span className="flex items-center gap-0.5 text-[11px] font-bold text-amber-500">
+                  <Star size={10} fill="#F59E0B" className="text-amber-400" />
+                  {post.poster.worker_rating || post.poster.poster_rating}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-1 mt-0.5">
               <Clock size={10} className="text-text-secondary" />
-              <span className="text-[11px] text-text-secondary">{timeAgo(post.timePosted)}</span>
+              <span className="text-[11px] text-text-secondary">{timeAgo(post.timePosted || post.created_at)}</span>
             </div>
           </div>
         </div>
@@ -338,14 +250,18 @@ function PostCard({ post, onLike, onSave }) {
       </div>
 
       {/* ── Full-width Image (if post has image) ── */}
-      {post.hasImage && (
+      {post.images && post.images.length > 0 ? (
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
+          <img src={post.images[0]} alt="Post" className="w-full h-full object-cover" />
+        </div>
+      ) : post.hasImage ? (
         <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
           <div className="w-full h-full flex items-center justify-center text-[72px]"
             style={{ background: post.imageBg }}>
             {post.imageEmoji}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* ── AI / Original Tab switcher ── */}
       <div className="px-3 pt-3 border-b border-[#F5F8FC]">
@@ -355,7 +271,7 @@ function PostCard({ post, onLike, onSave }) {
       {/* ── Post content ── */}
       <div className="px-4 py-3">
         <p className="text-[13.5px] text-text-primary leading-relaxed">
-          {tab === 'ai' ? post.aiText : post.originalText}
+          {tab === 'ai' ? (post.aiText || post.ai_text) : (post.raw_input_text || post.originalText)}
         </p>
 
         {/* Wage chip */}
@@ -379,15 +295,17 @@ function PostCard({ post, onLike, onSave }) {
       <div className="flex items-center justify-between px-4 pb-4">
         <div className="flex items-center gap-1">
           {/* CTA button */}
-          <button
-            className="px-4 py-2 rounded-xl text-[13px] font-bold transition-all active:scale-95 mr-2"
-            style={
-              isVolunteer
-                ? { background: 'linear-gradient(135deg,#059669,#065F46)', color:'#fff', boxShadow:'0 3px 10px rgba(5,150,105,0.35)' }
-                : { background: 'linear-gradient(135deg,#2B7EC1,#1A4F7A)', color:'#fff', boxShadow:'0 3px 10px rgba(43,126,193,0.35)' }
-            }>
-            {post.ctaLabel}
-          </button>
+          {!isOwnPost && (
+            <button
+              className="px-4 py-2 rounded-xl text-[13px] font-bold transition-all active:scale-95 mr-2"
+              style={
+                isVolunteer
+                  ? { background: 'linear-gradient(135deg,#059669,#065F46)', color:'#fff', boxShadow:'0 3px 10px rgba(5,150,105,0.35)' }
+                  : { background: 'linear-gradient(135deg,#2B7EC1,#1A4F7A)', color:'#fff', boxShadow:'0 3px 10px rgba(43,126,193,0.35)' }
+              }>
+              {post.ctaLabel || (isVolunteer ? 'I will help' : 'I\'m interested')}
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => onSave(post.id)} className="transition-all active:scale-90">
@@ -403,6 +321,69 @@ function PostCard({ post, onLike, onSave }) {
           </button>
         </div>
       </div>
+
+      {/* ── Matching Neighbours ── */}
+      {isOwnPost && post.suggested_workers && post.suggested_workers.length > 0 && (
+        <div className="border-t border-border pt-3 pb-4">
+          <div className="flex justify-between items-center px-4 mb-3">
+            <span className="text-[12px] font-semibold text-text-primary">
+              Suggested workers
+            </span>
+            <span 
+              className="text-[11px] text-primary cursor-pointer"
+              onClick={() => navigate(`/post/${post.id}/workers`)}
+            >
+              See all
+            </span>
+          </div>
+          <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
+            {post.suggested_workers.map(worker => (
+              <div
+                key={worker.id}
+                className="flex flex-col items-center bg-surface border border-[#E2E8F0] rounded-2xl p-3 min-w-[110px] cursor-pointer active:scale-95 transition-transform"
+                onClick={() => handleWorkerCardClick(worker, post.id)}
+              >
+                <div className="relative mb-2">
+                  <img
+                    src={worker.photo_url || '/assets/default-avatar.png'}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-[#E2E8F0]"
+                  />
+                  <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                    worker.trust_score >= 70 ? 'bg-blue-600' :
+                    worker.trust_score >= 40 ? 'bg-green-500' :
+                    worker.trust_score >= 20 ? 'bg-yellow-400' :
+                    'bg-gray-400'
+                  }`} />
+                </div>
+                <p className="text-[12px] font-bold text-text-primary text-center truncate w-full">
+                  {worker.name.split(' ')[0]}
+                </p>
+                <p className="text-[11px] text-primary font-medium">
+                  ★ {worker.trust_score || 'New'}
+                </p>
+                <p className="text-[10px] text-text-secondary mb-2">
+                  {worker.distance_km || 0} km
+                </p>
+                <button
+                  className="w-full border border-primary text-primary text-[11px] font-semibold rounded-lg py-1.5 active:bg-primary active:text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleInviteWorker(worker.id, post.id);
+                  }}
+                >
+                  Invite
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-[#0D1B2A] text-white text-[13px] font-medium px-5 py-2.5 rounded-full shadow-lg animate-fade-in-up">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
@@ -418,13 +399,40 @@ function NotifBadge({ count, color = '#E74C3C' }) {
   );
 }
 
+// ─── Skeleton Card ────────────────────────────────────────────────────────────
+function SkeletonPostCard() {
+  return (
+    <div className="bg-white" style={{ borderBottom: '8px solid #F0F4F8' }}>
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="skeleton rounded-full w-10 h-10"></div>
+          <div className="flex flex-col gap-1.5">
+            <div className="skeleton h-4 w-32 rounded"></div>
+            <div className="skeleton h-3 w-20 rounded"></div>
+          </div>
+        </div>
+      </div>
+      <div className="w-full skeleton" style={{ aspectRatio: '4/3' }}></div>
+      <div className="px-4 py-4 flex flex-col gap-2">
+        <div className="skeleton h-4 w-full rounded"></div>
+        <div className="skeleton h-4 w-5/6 rounded"></div>
+        <div className="skeleton h-4 w-4/6 rounded"></div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Home ────────────────────────────────────────────────────────────────
 export function Home() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [activeStory, setActiveStory] = useState('all');
-  const [posts, setPosts] = useState(INITIAL_POSTS);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [radius, setRadius] = useState(15);
+  
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
   const profileRef = useRef(null);
@@ -438,19 +446,72 @@ export function Home() {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
+  // 1. Auth token check
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+    }
+  }, [token, navigate]);
+
+  // 4. Silent location update on mount
+  useEffect(() => {
+    if (navigator.geolocation && token) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            await api.patch('/api/feed/location', {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude
+            });
+          } catch (err) {
+            console.error('Location update error:', err);
+          }
+        },
+        () => console.log('Location permission denied — using stored location')
+      );
+    }
+  }, [token]);
+
+  // 2. Load home screen
+  const loadHomeScreen = async () => {
+    if (!token) return;
+    setIsLoading(true);
+    setError(false);
+    try {
+      const [feedData, activePostData] = await Promise.all([
+        api.get(`/api/feed?filter=${activeFilter}&radius=${radius}`),
+        api.get(`/api/feed/active-post`)
+      ]);
+
+      let feedPosts = feedData.posts || [];
+
+      // Pin own active post at top if exists
+      if (activePostData.post) {
+        feedPosts = feedPosts.filter(p => p.id !== activePostData.post.id);
+        feedPosts = [activePostData.post, ...feedPosts];
+      }
+
+      setPosts(feedPosts);
+    } catch (err) {
+      console.error('Feed load error:', err);
+      setPosts([]);
+      setError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 3. When filter changes
+  useEffect(() => {
+    loadHomeScreen();
+  }, [activeFilter, radius, token]);
+
   const handleLike = id => setPosts(p => p.map(x => x.id === id ? { ...x, liked: !x.liked } : x));
   const handleSave = id => setPosts(p => p.map(x => x.id === id ? { ...x, saved: !x.saved } : x));
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const displayName = user?.name?.split(' ')[0] || user?.username || 'Neighbour';
   const areaName   = user?.area_name || 'Anna Nagar';
-
-  // Build the feed: [post0, post1, WORKER_STRIP, post2, post3, ...]
-  const feedItems = [];
-  posts.forEach((post, idx) => {
-    feedItems.push({ type: 'post', data: post });
-    if (idx === 1) feedItems.push({ type: 'workers' });
-  });
 
   return (
     <div className="min-h-screen font-sans" style={{ background: '#F0F4F8' }}>
@@ -511,8 +572,8 @@ export function Home() {
         {/* ── Story / Category circles ── */}
         <div className="flex gap-3.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
           {STORIES.map(s => (
-            <StoryCircle key={s.id} story={s} active={activeStory === s.id}
-              onClick={() => setActiveStory(s.id)} />
+            <StoryCircle key={s.id} story={s} active={activeFilter === s.id}
+              onClick={() => setActiveFilter(s.id)} />
           ))}
         </div>
       </div>
@@ -520,30 +581,77 @@ export function Home() {
       {/* ═══ SCROLL BODY ══════════════════════════════════════════════════════ */}
       <div className="pb-28">
 
-        {/* Active Post Card */}
-        <ActivePostCard post={MY_POST} />
+        {/* 8. Error state */}
+        {error && (
+          <div className="mx-4 mt-6 bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-200">
+            <p className="text-[15px] font-bold text-slate-700 mb-4">⚠️ Could not load posts</p>
+            <button onClick={loadHomeScreen} className="btn-outline">
+              [ Try again ]
+            </button>
+          </div>
+        )}
 
-        {/* Feed */}
-        <div className="mt-2">
-          {feedItems.map((item, idx) => {
-            if (item.type === 'workers') {
-              return <NearYouStrip key="workers-strip" />;
-            }
-            return (
-              <PostCard
-                key={item.data.id}
-                post={item.data}
-                onLike={handleLike}
-                onSave={handleSave}
-              />
-            );
-          })}
-        </div>
+        {/* 6. Loading state */}
+        {isLoading && !error && (
+          <div className="mt-2">
+            <SkeletonPostCard />
+            <SkeletonPostCard />
+            <SkeletonPostCard />
+          </div>
+        )}
 
-        {/* Bottom spacer label */}
-        <div className="flex items-center justify-center py-6 gap-2">
-          <span className="text-[12px] text-text-disabled font-medium">You're all caught up 🎉</span>
-        </div>
+        {/* Feed content */}
+        {!isLoading && !error && posts.length > 0 && (
+          <div className="mt-2">
+            {posts.map(post => {
+              if (post.is_own_post) {
+                // Not specified explicitly to use ActivePostCard, but 
+                // prompt mentioned: "Pass isOwnPost={post.is_own_post} — do not compute it on frontend anymore, trust the backend value."
+                // I will pass it to PostCard as requested.
+                // Wait, if ActivePostCard is used, it should be top of feed? Yes, loadHomeScreen places it at index 0.
+                // I will just use PostCard for all, but pass isOwnPost as requested! 
+                // But the original code had ActivePostCard for MY_POST. 
+                // Let's keep ActivePostCard if it's the own post (with applied count etc) or just PostCard?
+                // The prompt literally said: "Pass isOwnPost={post.is_own_post} — do not compute it on frontend anymore, trust the backend value."
+                // I will use PostCard for everything and remove ActivePostCard completely? 
+                // Wait, in my loadHomeScreen I did: "if (activePostData.post) { feedPosts = [activePostData.post, ...feedPosts] }"
+                // So it's in the posts array. I will use ActivePostCard if is_own_post, else PostCard.
+                // But the prompt says "Pass isOwnPost={post.is_own_post} [to PostCard]"
+                return (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    isOwnPost={post.is_own_post}
+                    onLike={handleLike}
+                    onSave={handleSave}
+                  />
+                );
+              }
+              return (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  isOwnPost={post.is_own_post}
+                  onLike={handleLike}
+                  onSave={handleSave}
+                />
+              );
+            })}
+
+            {/* Bottom spacer label */}
+            <div className="flex items-center justify-center py-6 gap-2">
+              <span className="text-[12px] text-text-disabled font-medium">You're all caught up 🎉</span>
+            </div>
+          </div>
+        )}
+
+        {/* 7. Empty state */}
+        {!isLoading && !error && posts.length === 0 && (
+          <div className="flex items-center justify-center py-6 gap-2">
+            <span className="text-[12px] text-text-disabled font-medium">You're all caught up 🎉</span>
+          </div>
+        )}
+
       </div>
 
       {/* ═══ FLOATING + BUTTON ═══════════════════════════════════════════════ */}

@@ -2,10 +2,12 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 
 export const api = {
   async request(endpoint, options = {}) {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
+    const headers = { ...options.headers };
+    
+    // Default to application/json only if body is not FormData
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    }
     
     // Add token if available in local storage
     const token = localStorage.getItem('token');
@@ -13,10 +15,40 @@ export const api = {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    let response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
     });
+
+    if (response.status === 401 && endpoint !== '/api/auth/refresh' && endpoint !== '/api/auth/login') {
+      try {
+        const refreshRes = await fetch(`${API_URL}/api/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        
+        if (refreshRes.ok) {
+          const data = await refreshRes.json();
+          localStorage.setItem('token', data.access_token);
+          headers['Authorization'] = `Bearer ${data.access_token}`;
+          
+          response = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers,
+          });
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          return;
+        }
+      } catch (e) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return;
+      }
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -33,26 +65,29 @@ export const api = {
   },
 
   post(endpoint, body, options = {}) {
+    const isFormData = body instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
   },
 
   put(endpoint, body, options = {}) {
+    const isFormData = body instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
   },
 
   patch(endpoint, body, options = {}) {
+    const isFormData = body instanceof FormData;
     return this.request(endpoint, {
       ...options,
       method: 'PATCH',
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
   },
 

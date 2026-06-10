@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Mic, PenLine, Plus, X, ChevronRight, ChevronDown, RotateCcw, Sparkles, Check, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 export default function CreatePost() {
   const navigate = useNavigate();
@@ -92,48 +93,16 @@ export default function CreatePost() {
     const input = inputMethod === 'speak' ? transcript : typedInput;
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiUrl}/api/posts/ai-refine`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          raw_input: input,
-          retry_reason: reason,
-          previous_result: reason ? aiResult : null
-        })
+      const data = await api.post('/api/posts/ai-refine', {
+        raw_input: input,
+        retry_reason: reason,
+        previous_result: reason ? aiResult : null
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setAiResult(data.result || data);
-      } else {
-        // Fallback for UI if backend isn't ready
-        setTimeout(() => setAiResult({
-          area_name: 'Koyambedu',
-          work_date: 'Tomorrow',
-          work_time_slot: 'Morning',
-          pay_per_person: '350',
-          workers_needed: '4',
-          title: 'Shift furniture',
-          description: 'Need 4 people tomorrow morning to shift furniture near Koyambedu.',
-          task_type: 'Moving'
-        }), 1000);
-      }
+      setAiResult(data.result || data);
     } catch (err) {
-      // Fallback for UI if backend isn't ready
-      setTimeout(() => setAiResult({
-        area_name: 'Koyambedu',
-        work_date: 'Tomorrow',
-        work_time_slot: 'Morning',
-        pay_per_person: '350',
-        workers_needed: '4',
-        title: 'Shift furniture',
-        description: 'Need 4 people tomorrow morning to shift furniture near Koyambedu.',
-        task_type: 'Moving'
-      }), 1000);
+      console.error("AI Refine Exception:", err);
+      setStep('input');
+      alert("Sorry, please retry.");
     }
     
     setTimeout(() => {
@@ -154,19 +123,11 @@ export default function CreatePost() {
     images.forEach((img, i) => formData.append(`image_${i}`, img.file));
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiUrl}/api/posts/create`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${accessToken}` },
-        body: formData
-      });
-      if (res.ok) {
-        setStep('success');
-      } else {
-        setStep('success'); // Fallback if backend not ready
-      }
+      await api.post('/api/posts/create', formData);
+      setStep('success');
     } catch (e) {
-      setStep('success'); // Fallback if backend not ready
+      console.error("Post Creation Exception:", e);
+      alert("Sorry, please retry.");
     }
   };
 
@@ -654,10 +615,10 @@ export default function CreatePost() {
                   <p className="text-[#64748B] text-[13px] mb-6">Your post is now visible to workers nearby</p>
                   
                   <div className="flex justify-between gap-3">
-                    <button className="btn-primary w-[48%] !px-0 !py-3 !text-[13px]" onClick={() => navigate('/home')}>
+                    <button className="btn-primary w-[48%] !px-0 !py-3 !text-[13px]" onClick={() => navigate('/home', { replace: true })}>
                       View my post
                     </button>
-                    <button className="btn-outline w-[48%] !px-0 !py-3 !text-[13px]" onClick={() => navigate('/home')}>
+                    <button className="btn-outline w-[48%] !px-0 !py-3 !text-[13px]" onClick={() => navigate('/home', { replace: true })}>
                       Go to feed
                     </button>
                   </div>

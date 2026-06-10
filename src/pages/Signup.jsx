@@ -51,6 +51,27 @@ export function Signup() {
   
   const [selectedSkills, setSelectedSkills] = useState([]);
 
+  const [customSkills, setCustomSkills] = useState([]);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customSkillInput, setCustomSkillInput] = useState('');
+
+  const confirmCustomSkill = () => {
+    const trimmed = customSkillInput.trim();
+    if (!trimmed) return;
+    if (customSkills.includes(trimmed.toLowerCase())) return;
+    if (customSkills.length + selectedSkills.length >= 10) {
+      alert('Maximum 10 skills allowed');
+      return;
+    }
+    setCustomSkills(prev => [...prev, trimmed.toLowerCase()]);
+    setCustomSkillInput('');
+    setShowCustomInput(false);
+  };
+
+  const removeCustomSkill = (skill) => {
+    setCustomSkills(prev => prev.filter(s => s !== skill));
+  };
+
   // Main Form Data State
   const [formData, setFormData] = useState({
     name: '',
@@ -385,7 +406,7 @@ export function Signup() {
       state: formData.state || null,
       district: formData.district || null,
       worker_profile: targetIsWorker ? {
-        skills: selectedSkills,
+        skills: [...selectedSkills, ...customSkills],
         experience_levels: formData.worker_profile.experience_levels,
         availability_days: formData.worker_profile.availability_days,
         availability_slots: formData.worker_profile.availability_slots,
@@ -454,7 +475,7 @@ export function Signup() {
         return true;
       case 5:
         // at least one skill selected
-        return selectedSkills.length > 0;
+        return selectedSkills.length > 0 || customSkills.length > 0;
       default:
         return false;
     }
@@ -1035,6 +1056,63 @@ export function Signup() {
                       </div>
                     );
                   })}
+                  
+                  {/* Custom skills added by user */}
+                  {customSkills.map(skill => (
+                    <div
+                      key={skill}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-[12px] font-medium"
+                    >
+                      <span>{skill}</span>
+                      <X
+                        size={12}
+                        className="cursor-pointer"
+                        onClick={() => removeCustomSkill(skill)}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Add custom skill button */}
+                  {!showCustomInput ? (
+                    <button
+                      onClick={() => setShowCustomInput(true)}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-dashed border-primary text-primary rounded-full text-[12px] font-medium"
+                    >
+                      <Plus size={13} />
+                      Add skill
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 col-span-full mt-1">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={customSkillInput}
+                        onChange={(e) => setCustomSkillInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') confirmCustomSkill()
+                          if (e.key === 'Escape') setShowCustomInput(false)
+                        }}
+                        placeholder="Type skill name..."
+                        className="input-field text-[13px] py-2 flex-1"
+                        maxLength={30}
+                      />
+                      <button
+                        onClick={confirmCustomSkill}
+                        className="bg-primary text-white text-[12px] font-semibold px-3 py-2 rounded-lg"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowCustomInput(false)
+                          setCustomSkillInput('')
+                        }}
+                        className="text-text-secondary text-[12px] px-2 py-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
