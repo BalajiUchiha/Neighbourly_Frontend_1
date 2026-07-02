@@ -198,23 +198,44 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
   const navigate = useNavigate();
   const isVolunteer = post.type === 'volunteer';
 
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState(null)
+  const [showRagHistory, setShowRagHistory] = useState(false)
+  const [ragHistory, setRagHistory] = useState([])
 
   const showToast = (message) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 2500);
-  };
+    setToast(message)
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  const loadRagHistory = async () => {
+    const accessToken = localStorage.getItem('token');
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL || ''}/api/rag/history?post_id=${post.id}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    )
+    const data = await res.json()
+    setRagHistory(data.sessions || [])
+    setShowRagHistory(true)
+  }
 
   const handleWorkerCardClick = (worker, postId) => {
-    navigate(`/post/${postId}/ask-worker/${worker.id}`);
-  };
+    // Navigate to RAG chat screen for this worker and post
+    navigate(`/post/${postId}/ask-worker/${worker.id}`)
+  }
 
   const handleInviteWorker = async (workerId, postId) => {
-    try {
-      await api.post('/api/rag/invite', { worker_id: workerId, post_id: postId });
-    } catch (e) {}
-    showToast('Invite sent to worker');
-  };
+    const accessToken = localStorage.getItem('token');
+    await fetch(`${import.meta.env.VITE_API_URL}/api/rag/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ worker_id: workerId, post_id: postId })
+    })
+    // Show brief success toast — "Invite sent"
+    showToast('Invite sent to worker')
+  }
 
   return (
     <div className="bg-white" style={{ borderBottom: '8px solid #F0F4F8' }}>
@@ -244,9 +265,19 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
             </div>
           </div>
         </div>
-        <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-          <MoreHorizontal size={18} className="text-text-secondary" />
-        </button>
+        <div className="flex items-center gap-2">
+          {isOwnPost && (
+            <button
+              onClick={loadRagHistory}
+              className="text-[11px] border border-primary text-primary px-3 py-1 rounded-full whitespace-nowrap"
+            >
+              👥 Workers asked
+            </button>
+          )}
+          <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+            <MoreHorizontal size={18} className="text-text-secondary" />
+          </button>
+        </div>
       </div>
 
       {/* ── Full-width Image (if post has image) ── */}
@@ -325,6 +356,8 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
       {/* ── Matching Neighbours ── */}
       {isOwnPost && post.suggested_workers && post.suggested_workers.length > 0 && (
         <div className="border-t border-border pt-3 pb-4">
+
+          {/* Section header */}
           <div className="flex justify-between items-center px-4 mb-3">
             <span className="text-[12px] font-semibold text-text-primary">
               Suggested workers
@@ -336,18 +369,22 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
               See all
             </span>
           </div>
+
+          {/* Worker cards — Instagram suggestion style */}
           <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-1">
             {post.suggested_workers.map(worker => (
               <div
                 key={worker.id}
-                className="flex flex-col items-center bg-surface border border-[#E2E8F0] rounded-2xl p-3 min-w-[110px] cursor-pointer active:scale-95 transition-transform"
+                className="flex flex-col items-center bg-surface border border-border rounded-2xl p-3 min-w-[110px] cursor-pointer active:scale-95 transition-transform"
                 onClick={() => handleWorkerCardClick(worker, post.id)}
               >
+                {/* Photo */}
                 <div className="relative mb-2">
                   <img
                     src={worker.photo_url || '/assets/default-avatar.png'}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-[#E2E8F0]"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-border"
                   />
+                  {/* Trust badge dot */}
                   <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
                     worker.trust_score >= 70 ? 'bg-blue-600' :
                     worker.trust_score >= 40 ? 'bg-green-500' :
@@ -355,20 +392,28 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
                     'bg-gray-400'
                   }`} />
                 </div>
+
+                {/* Name */}
                 <p className="text-[12px] font-bold text-text-primary text-center truncate w-full">
                   {worker.name.split(' ')[0]}
                 </p>
+
+                {/* Rating */}
                 <p className="text-[11px] text-primary font-medium">
-                  ★ {worker.trust_score || 'New'}
+                  ★ {worker.trust_score_display}
                 </p>
+
+                {/* Distance */}
                 <p className="text-[10px] text-text-secondary mb-2">
-                  {worker.distance_km || 0} km
+                  {worker.distance_km} km
                 </p>
+
+                {/* Invite button */}
                 <button
                   className="w-full border border-primary text-primary text-[11px] font-semibold rounded-lg py-1.5 active:bg-primary active:text-white transition-colors"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    handleInviteWorker(worker.id, post.id);
+                    e.stopPropagation()
+                    handleInviteWorker(worker.id, post.id)
                   }}
                 >
                   Invite
@@ -382,6 +427,81 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
       {toast && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-[#0D1B2A] text-white text-[13px] font-medium px-5 py-2.5 rounded-full shadow-lg animate-fade-in-up">
           {toast}
+        </div>
+      )}
+
+      {/* RAG History Bottom Sheet */}
+      {showRagHistory && (
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          onClick={() => setShowRagHistory(false)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40" />
+
+          <div
+            className="relative w-full bg-white rounded-t-2xl shadow-[0_-4px_24px_rgba(43,126,193,0.15)] max-h-[70vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+
+            <div className="px-4 py-3 border-b border-border">
+              <p className="font-bold text-[15px] text-text-primary">
+                Workers you asked about
+              </p>
+              <p className="text-[11px] text-text-secondary mt-0.5">
+                For this post only — visible only to you
+              </p>
+            </div>
+
+            {ragHistory.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <p className="text-text-secondary text-[13px]">
+                  No worker enquiries yet for this post
+                </p>
+              </div>
+            ) : (
+              <div className="px-4 py-2 flex flex-col gap-3 pb-6">
+                {ragHistory.map(session => (
+                  <div
+                    key={session.id}
+                    className="bg-surface border border-border rounded-xl p-3 flex items-center gap-3 cursor-pointer"
+                    onClick={() => {
+                      setShowRagHistory(false)
+                      navigate(`/post/${post.id}/ask-worker/${session.worker_id}`)
+                    }}
+                  >
+                    <img
+                      src={session.worker_photo || '/assets/default-avatar.png'}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-[13px] text-text-primary">
+                        {session.worker_name}
+                      </p>
+                      <p className="text-[11px] text-text-secondary truncate">
+                        {session.last_message || 'No messages yet'}
+                      </p>
+                      <p className="text-[10px] text-text-secondary mt-0.5">
+                        {session.total_questions || 0} questions · {session.credits_used || 0} credits used
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-[10px] text-text-secondary">
+                        {timeAgo(session.created_at)}
+                      </span>
+                      <span className="text-[11px] text-primary font-medium">
+                        Re-open →
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Home from './pages/Home';
 import CreatePost from './pages/CreatePost';
+import AskWorker from './pages/AskWorker';
 
 function App() {
   return (
@@ -26,6 +27,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreatePost />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/post/:postId/ask-worker/:workerId"
+            element={
+              <ProtectedRoute>
+                <AskWorker />
               </ProtectedRoute>
             }
           />
