@@ -98,7 +98,11 @@ export default function CreatePost() {
         retry_reason: reason,
         previous_result: reason ? aiResult : null
       });
-      setAiResult(data.result || data);
+      const refined = data.result || data;
+      if (!refined.area_name) {
+        refined.area_name = user?.area_name || '';
+      }
+      setAiResult(refined);
     } catch (err) {
       console.error("AI Refine Exception:", err);
       setStep('input');
@@ -397,7 +401,8 @@ export default function CreatePost() {
                   ₹<input 
                     value={aiResult.pay_per_person || ''} 
                     onChange={e => handleResultChange('pay_per_person', e.target.value)}
-                    className="w-16 mx-1 bg-transparent focus:outline-none border-b border-transparent focus:border-[#4A9FD4] pb-0.5"
+                    placeholder="type your pay here"
+                    className="w-32 mx-1 bg-transparent focus:outline-none border-b border-dashed border-[#94A3B8] focus:border-[#4A9FD4] pb-0.5 text-center placeholder:text-[11px] placeholder:text-[#94A3B8] placeholder:font-normal placeholder:italic"
                   /> / person
                 </div>
               </div>

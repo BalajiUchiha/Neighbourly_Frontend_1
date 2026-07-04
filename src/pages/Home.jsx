@@ -13,6 +13,13 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
+const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  const API_URL = import.meta.env.VITE_API_URL || '';
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 function timeAgo(dateStr) {
   if (!dateStr) return '2h ago';
   const diff = (Date.now() - new Date(dateStr)) / 1000;
@@ -40,9 +47,9 @@ function Avatar({ name, photoUrl, size = 40, className = '' }) {
   const palette = ['#2B7EC1','#6D28D9','#059669','#D97706','#DC2626','#0284C7'];
   const ci = name ? name.charCodeAt(0) % palette.length : 0;
 
-  if (photoUrl && photoUrl.startsWith('http')) {
+  if (photoUrl) {
     return (
-      <img src={photoUrl} alt={name}
+      <img src={getImageUrl(photoUrl)} alt={name}
         className={`rounded-full object-cover flex-shrink-0 ${className}`}
         style={{ width: size, height: size }} />
     );
@@ -166,13 +173,46 @@ function ActivePostCard({ post }) {
 
       {/* Content */}
       <div className="px-4 py-3">
-        <p className="text-[12.5px] text-text-secondary leading-relaxed">
-          {tab === 'ai' ? (post.ai_text || post.aiText) : (post.raw_input_text || post.originalText)}
-        </p>
-        <div className="flex items-center gap-2 mt-2.5">
-          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">{post.type}</span>
-          <span className="text-[12px] font-bold text-primary">{post.wage}</span>
-        </div>
+        {tab === 'ai' ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+              <span className="text-[16px]">📍</span> <span className="font-semibold">{post.area_name || 'Location not specified'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+              <span className="text-[16px]">📅</span> <span className="font-semibold">{post.work_date || 'Flexible date'} {post.work_time_slot ? `· ${post.work_time_slot}` : ''}</span>
+            </div>
+            {(post.pay_per_person || post.wage) && (
+              <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+                <span className="text-[16px]">💰</span> <span className="font-semibold">₹{post.pay_per_person || post.wage} / person</span>
+              </div>
+            )}
+            {post.workers_needed && (
+              <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+                <span className="text-[16px]">👥</span> <span className="font-semibold">{post.workers_needed} {post.workers_needed > 1 ? 'People' : 'Person'}</span>
+              </div>
+            )}
+            <div className="mt-1 bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+              <p className="text-[11px] text-text-secondary font-bold uppercase mb-1">Task Details</p>
+              <p className="text-[13px] font-bold text-text-primary">{post.title}</p>
+              {post.description && <p className="text-[12px] text-text-secondary mt-1">{post.description}</p>}
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[11px] text-text-secondary font-medium">Skill:</span>
+                <span className="px-2 py-0.5 bg-[#E2E8F0] text-[#475569] rounded-full text-[10px] font-bold uppercase tracking-wide">
+                  {post.task_type || post.type}
+                </span>
+                {post.no_exp_needed && (
+                  <span className="px-2 py-0.5 bg-[#F5F3FF] text-[#7C3AED] rounded-full text-[10px] font-bold uppercase tracking-wide">
+                    🔰 No Exp Needed
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-[13.5px] text-text-primary leading-relaxed whitespace-pre-wrap">
+            {post.raw_input_text || post.originalText || post.description}
+          </p>
+        )}
       </div>
 
       {/* Manage button */}
@@ -208,14 +248,14 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
   }
 
   const loadRagHistory = async () => {
-    const accessToken = localStorage.getItem('token');
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL || ''}/api/rag/history?post_id=${post.id}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    )
-    const data = await res.json()
-    setRagHistory(data.sessions || [])
-    setShowRagHistory(true)
+    try {
+      const data = await api.get(`/api/rag/history?post_id=${post.id}`);
+      setRagHistory(data.sessions || []);
+      setShowRagHistory(true);
+    } catch (err) {
+      console.error(err);
+      showToast('Could not load history');
+    }
   }
 
   const handleWorkerCardClick = (worker, postId) => {
@@ -283,7 +323,7 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
       {/* ── Full-width Image (if post has image) ── */}
       {post.images && post.images.length > 0 ? (
         <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
-          <img src={post.images[0]} alt="Post" className="w-full h-full object-cover" />
+          <img src={getImageUrl(post.images[0].image_url || post.images[0])} alt="Post" className="w-full h-full object-cover" />
         </div>
       ) : post.hasImage ? (
         <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
@@ -301,17 +341,45 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
 
       {/* ── Post content ── */}
       <div className="px-4 py-3">
-        <p className="text-[13.5px] text-text-primary leading-relaxed">
-          {tab === 'ai' ? (post.aiText || post.ai_text) : (post.raw_input_text || post.originalText)}
-        </p>
-
-        {/* Wage chip */}
-        {post.wage && (
-          <div className="mt-2">
-            <span className="inline-flex items-center gap-1 text-[12px] font-bold text-primary bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100">
-              💰 {post.wage}
-            </span>
+        {tab === 'ai' ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+              <span className="text-[16px]">📍</span> <span className="font-semibold">{post.area_name || 'Location not specified'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+              <span className="text-[16px]">📅</span> <span className="font-semibold">{post.work_date || 'Flexible date'} {post.work_time_slot ? `· ${post.work_time_slot}` : ''}</span>
+            </div>
+            {(post.pay_per_person || post.wage) && (
+              <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+                <span className="text-[16px]">💰</span> <span className="font-semibold">₹{post.pay_per_person || post.wage} / person</span>
+              </div>
+            )}
+            {post.workers_needed && (
+              <div className="flex items-center gap-2 text-[13px] text-text-primary bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+                <span className="text-[16px]">👥</span> <span className="font-semibold">{post.workers_needed} {post.workers_needed > 1 ? 'People' : 'Person'}</span>
+              </div>
+            )}
+            <div className="mt-1 bg-[#F8FAFC] px-3 py-2 rounded-lg border border-[#E2E8F0]">
+              <p className="text-[11px] text-text-secondary font-bold uppercase mb-1">Task Details</p>
+              <p className="text-[13px] font-bold text-text-primary">{post.title}</p>
+              {post.description && <p className="text-[12px] text-text-secondary mt-1">{post.description}</p>}
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[11px] text-text-secondary font-medium">Skill:</span>
+                <span className="px-2 py-0.5 bg-[#E2E8F0] text-[#475569] rounded-full text-[10px] font-bold uppercase tracking-wide">
+                  {post.task_type || post.type}
+                </span>
+                {post.no_exp_needed && (
+                  <span className="px-2 py-0.5 bg-[#F5F3FF] text-[#7C3AED] rounded-full text-[10px] font-bold uppercase tracking-wide">
+                    🔰 No Exp Needed
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+        ) : (
+          <p className="text-[13.5px] text-text-primary leading-relaxed whitespace-pre-wrap">
+            {post.raw_input_text || post.originalText || "No original text available."}
+          </p>
         )}
       </div>
 
@@ -433,14 +501,14 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
       {/* RAG History Bottom Sheet */}
       {showRagHistory && (
         <div
-          className="fixed inset-0 z-50 flex items-end"
+          className="fixed inset-0 z-[9999] flex items-end"
           onClick={() => setShowRagHistory(false)}
         >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40" />
 
           <div
-            className="relative w-full bg-white rounded-t-2xl shadow-[0_-4px_24px_rgba(43,126,193,0.15)] max-h-[70vh] overflow-y-auto"
+            className="relative w-full bg-white rounded-t-2xl shadow-[0_-4px_24px_rgba(43,126,193,0.15)] max-h-[85vh] overflow-y-auto overscroll-contain pb-6"
             onClick={e => e.stopPropagation()}
           >
             {/* Handle */}
@@ -464,7 +532,7 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
                 </p>
               </div>
             ) : (
-              <div className="px-4 py-2 flex flex-col gap-3 pb-6">
+              <div className="px-4 py-2 flex flex-col gap-3 pb-12">
                 {ragHistory.map(session => (
                   <div
                     key={session.id}
@@ -474,10 +542,7 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
                       navigate(`/post/${post.id}/ask-worker/${session.worker_id}`)
                     }}
                   >
-                    <img
-                      src={session.worker_photo || '/assets/default-avatar.png'}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
+                    <Avatar name={session.worker_name} photoUrl={session.worker_photo} size={40} />
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-[13px] text-text-primary">
                         {session.worker_name}
@@ -548,8 +613,17 @@ export function Home() {
   const navigate = useNavigate();
 
   const [activeFilter, setActiveFilter] = useState('all');
-  const [posts, setPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [posts, setPosts] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('home_feed_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    return !sessionStorage.getItem('home_feed_cache');
+  });
   const [error, setError] = useState(false);
   const [radius, setRadius] = useState(15);
   
@@ -595,7 +669,7 @@ export function Home() {
   // 2. Load home screen
   const loadHomeScreen = async () => {
     if (!token) return;
-    setIsLoading(true);
+    if (posts.length === 0) setIsLoading(true);
     setError(false);
     try {
       const [feedData, activePostData] = await Promise.all([
@@ -612,6 +686,7 @@ export function Home() {
       }
 
       setPosts(feedPosts);
+      sessionStorage.setItem('home_feed_cache', JSON.stringify(feedPosts));
     } catch (err) {
       console.error('Feed load error:', err);
       setPosts([]);
