@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, Lock, Eye, EyeOff, Camera, 
   MapPin, Briefcase, Heart, CheckCircle, XCircle, 
   ArrowLeft, ArrowRight, ChevronDown, Check, X, 
-  AlertTriangle, AtSign, Volume2, RotateCcw
+  AlertTriangle, AtSign, Volume2, RotateCcw, Plus
 } from 'lucide-react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -15,64 +15,27 @@ export function Signup() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  // Redirect to home if user is already authenticated
-  useEffect(() => {
-    if (isAuthenticated && !showComfortPopup) {
-      navigate('/home', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
-  // State management
+  // ── All useState declarations first ──────────────────────────
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
-  // Voice Assistance state
   const [highlightedButton, setHighlightedButton] = useState(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
-  const audioRef = useRef(null);
-  const highlightMapRef = useRef([]);
-  
-  // Replay message tooltip states
   const [showReplayTooltip, setShowReplayTooltip] = useState(false);
   const [hasReplayed, setHasReplayed] = useState(false);
-  
-  // Post-signup Comfort classification state
   const [showComfortPopup, setShowComfortPopup] = useState(false);
   const [selectedComfort, setSelectedComfort] = useState(null);
   const [submittingComfort, setSubmittingComfort] = useState(false);
-
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState(null); // null, true, false
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [locationDetected, setLocationDetected] = useState(false);
   const [districtsList, setDistrictsList] = useState([]);
-  
   const [selectedSkills, setSelectedSkills] = useState([]);
-
   const [customSkills, setCustomSkills] = useState([]);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customSkillInput, setCustomSkillInput] = useState('');
-
-  const confirmCustomSkill = () => {
-    const trimmed = customSkillInput.trim();
-    if (!trimmed) return;
-    if (customSkills.includes(trimmed.toLowerCase())) return;
-    if (customSkills.length + selectedSkills.length >= 10) {
-      alert('Maximum 10 skills allowed');
-      return;
-    }
-    setCustomSkills(prev => [...prev, trimmed.toLowerCase()]);
-    setCustomSkillInput('');
-    setShowCustomInput(false);
-  };
-
-  const removeCustomSkill = (skill) => {
-    setCustomSkills(prev => prev.filter(s => s !== skill));
-  };
-
-  // Main Form Data State
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -104,10 +67,21 @@ export function Signup() {
     }
   });
 
-  // Map Refs
+  // ── All useRef declarations ───────────────────────────────────
+  const audioRef = useRef(null);
+  const highlightMapRef = useRef([]);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerInstanceRef = useRef(null);
+
+  // ── All useEffect declarations ────────────────────────────────
+
+  // Redirect if already authenticated and comfort popup is not showing
+  useEffect(() => {
+    if (isAuthenticated && !showComfortPopup) {
+      navigate('/home', { replace: true });
+    }
+  }, [isAuthenticated, navigate, showComfortPopup]);
 
   // Load districts list on mount
   useEffect(() => {
@@ -393,12 +367,17 @@ export function Signup() {
     const targetIsWorker = customIsWorkerValue !== null ? customIsWorkerValue : formData.is_worker;
     
     // Prepare exact final payload
+    const rawPhoto = formData.photo_url || null;
+    // Never send base64 data URLs to the backend — they crash the DB varchar column.
+    // Photo upload is handled separately after signup.
+    const safePhotoUrl = rawPhoto && rawPhoto.startsWith('data:') ? null : rawPhoto;
+
     const payload = {
       ...formData,
       is_worker: targetIsWorker,
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
-      photo_url: formData.photo_url || null,
+      photo_url: safePhotoUrl,
       date_of_birth: formData.date_of_birth || null,
       gender: formData.gender || null,
       area_name: formData.area_name || null,
@@ -417,6 +396,7 @@ export function Signup() {
         willing_to_travel: formData.worker_profile.willing_to_travel
       } : null
     };
+
 
     try {
       const data = await api.post('/api/auth/signup', payload);
@@ -555,6 +535,23 @@ export function Signup() {
   // Passwords match validation triggers
   const passwordsMatch = formData.password === confirmPassword;
   const showPasswordError = confirmPassword.length > 0 && !passwordsMatch;
+
+  const confirmCustomSkill = () => {
+    const trimmed = customSkillInput.trim();
+    if (!trimmed) return;
+    if (customSkills.includes(trimmed.toLowerCase())) return;
+    if (customSkills.length + selectedSkills.length >= 10) {
+      alert('Maximum 10 skills allowed');
+      return;
+    }
+    setCustomSkills(prev => [...prev, trimmed.toLowerCase()]);
+    setCustomSkillInput('');
+    setShowCustomInput(false);
+  };
+
+  const removeCustomSkill = (skill) => {
+    setCustomSkills(prev => prev.filter(s => s !== skill));
+  };
 
   return (
     <div className="page-bg min-h-[100dvh] w-full flex flex-col items-center px-6 pt-8 pb-28 relative">

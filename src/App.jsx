@@ -6,6 +6,7 @@ import Signup from './pages/Signup';
 import Home from './pages/Home';
 import CreatePost from './pages/CreatePost';
 import AskWorker from './pages/AskWorker';
+import Applicants from './pages/Applicants';
 
 function App() {
   return (
@@ -38,6 +39,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/post/:postId/applicants"
+            element={
+              <ProtectedRoute>
+                <Applicants />
+              </ProtectedRoute>
+            }
+/>
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </BrowserRouter>

@@ -7,7 +7,8 @@ import {
   Wrench, Leaf, ChefHat, Truck, Hammer, Scissors, BookOpen,
   LogOut, User, Settings, Plus, Globe, Navigation,
   Home as HomeIcon, Compass, MessageSquare, UserCircle,
-  Sparkles, Check, UserCheck, Clock, BadgeCheck
+  Sparkles, Check, UserCheck, Clock, BadgeCheck,
+  Users, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -241,6 +242,8 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
   const [toast, setToast] = useState(null)
   const [showRagHistory, setShowRagHistory] = useState(false)
   const [ragHistory, setRagHistory] = useState([])
+  const [hasApplied, setHasApplied] = useState(false)
+  const [isApplying, setIsApplying] = useState(false)
 
   const showToast = (message) => {
     setToast(message)
@@ -261,6 +264,33 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
   const handleWorkerCardClick = (worker, postId) => {
     // Navigate to RAG chat screen for this worker and post
     navigate(`/post/${postId}/ask-worker/${worker.id}`)
+  }
+
+  const handleApply = async () => {
+    if (hasApplied || isApplying) return
+    setIsApplying(true)
+    try {
+      const accessToken = localStorage.getItem('token')
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/applications/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ post_id: post.id, note: null, counter_wage: null })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setHasApplied(true)
+        showToast('Applied successfully! 🎉')
+      } else {
+        showToast(data.detail || 'Could not apply')
+      }
+    } catch {
+      showToast('Something went wrong')
+    } finally {
+      setIsApplying(false)
+    }
   }
 
   const handleInviteWorker = async (workerId, postId) => {
@@ -324,6 +354,15 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
       {post.images && post.images.length > 0 ? (
         <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
           <img src={getImageUrl(post.images[0].image_url || post.images[0])} alt="Post" className="w-full h-full object-cover" />
+          {/* Slots pill overlay — own post only */}
+          {isOwnPost && (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black bg-opacity-60 backdrop-blur-sm rounded-full px-3 py-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+              <span className="text-white text-[11px] font-semibold">
+                {post.slots_remaining} of {post.workers_needed} positions open
+              </span>
+            </div>
+          )}
         </div>
       ) : post.hasImage ? (
         <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
@@ -383,6 +422,24 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
         )}
       </div>
 
+      {/* ── Slots pill — no image, own post only ── */}
+      {isOwnPost && (!post.images || post.images.length === 0) && (
+        <div className="mx-3 mb-2 flex items-center gap-2 bg-surface border border-border rounded-full px-3 py-2 self-start">
+          <div className={`w-2 h-2 rounded-full ${post.slots_remaining > 0 ? 'bg-green-500' : 'bg-red-400'}`} />
+          <span className="text-[12px] font-semibold text-text-primary">
+            {post.slots_remaining > 0
+              ? `${post.slots_remaining} of ${post.workers_needed} positions still open`
+              : 'All positions filled'
+            }
+          </span>
+          {post.workers_needed - post.slots_remaining > 0 && (
+            <span className="text-[11px] text-text-secondary">
+              · {post.workers_needed - post.slots_remaining} hired
+            </span>
+          )}
+        </div>
+      )}
+
       {/* ── Tags ── */}
       {post.tags && post.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-4 pb-3">
@@ -396,13 +453,17 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
           {/* CTA button */}
           {!isOwnPost && (
             <button
-              className="px-4 py-2 rounded-xl text-[13px] font-bold transition-all active:scale-95 mr-2"
+              onClick={handleApply}
+              disabled={hasApplied || isApplying}
+              className="px-4 py-2 rounded-xl text-[13px] font-bold transition-all active:scale-95 mr-2 disabled:opacity-70"
               style={
-                isVolunteer
+                hasApplied
+                  ? { background: 'linear-gradient(135deg,#059669,#065F46)', color:'#fff', boxShadow:'0 3px 10px rgba(5,150,105,0.35)' }
+                  : isVolunteer
                   ? { background: 'linear-gradient(135deg,#059669,#065F46)', color:'#fff', boxShadow:'0 3px 10px rgba(5,150,105,0.35)' }
                   : { background: 'linear-gradient(135deg,#2B7EC1,#1A4F7A)', color:'#fff', boxShadow:'0 3px 10px rgba(43,126,193,0.35)' }
               }>
-              {post.ctaLabel || (isVolunteer ? 'I will help' : 'I\'m interested')}
+              {isApplying ? 'Applying…' : hasApplied ? '✓ Applied' : (post.ctaLabel || (isVolunteer ? 'I will help' : "I'm interested"))}
             </button>
           )}
         </div>
@@ -420,6 +481,27 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
           </button>
         </div>
       </div>
+
+      {/* ── View Applicants button — own post only ── */}
+      {isOwnPost && (
+        <button
+          onClick={() => navigate(`/post/${post.id}/applicants`)}
+          className="mx-3 mb-3 w-full flex items-center justify-between bg-gradient-to-r from-primary to-primary-dark text-white rounded-xl px-4 py-3"
+        >
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-white" />
+            <span className="font-bold text-[13px]">View Applicants</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {post.applications_count > 0 && (
+              <span className="bg-white bg-opacity-20 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                {post.applications_count} applied
+              </span>
+            )}
+            <ChevronRight size={16} className="text-white" />
+          </div>
+        </button>
+      )}
 
       {/* ── Matching Neighbours ── */}
       {isOwnPost && post.suggested_workers && post.suggested_workers.length > 0 && (

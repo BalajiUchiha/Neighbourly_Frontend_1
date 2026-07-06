@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -13,24 +12,13 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
-  const [loadingUser, setLoadingUser] = useState(false);
 
-  // On token change, fetch user profile from backend
+  // On token change, if no user in storage, clear the stale token
   useEffect(() => {
     if (token && !user) {
-      setLoadingUser(true);
-      api.get('/api/users/me')
-        .then((data) => {
-          setUser(data);
-          localStorage.setItem('user', JSON.stringify(data));
-        })
-        .catch(() => {
-          // token invalid, clear it
-          setToken(null);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-        })
-        .finally(() => setLoadingUser(false));
+      setToken(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
     if (!token) {
       setUser(null);
@@ -54,21 +42,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('user');
   };
 
-  const refreshUser = async () => {
-    try {
-      const data = await api.get('/api/users/me');
-      setUser(data);
-      localStorage.setItem('user', JSON.stringify(data));
-      return data;
-    } catch {
-      return null;
-    }
-  };
-
   const isAuthenticated = !!token;
 
   return (
-    <AuthContext.Provider value={{ token, user, isAuthenticated, loadingUser, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ token, user, isAuthenticated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
