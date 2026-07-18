@@ -7,6 +7,11 @@ import Home from './pages/Home';
 import CreatePost from './pages/CreatePost';
 import AskWorker from './pages/AskWorker';
 import Applicants from './pages/Applicants';
+import Chat from './pages/Chat';
+import RateChat from './pages/RateChat';
+import TrustScore from './pages/TrustScore';
+import Notifications from './pages/Notifications';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -46,7 +51,47 @@ function App() {
                 <Applicants />
               </ProtectedRoute>
             }
-/>
+          />
+          <Route
+            path="/chat/:chatId"
+            element={
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat/:chatId/rate"
+            element={
+              <ProtectedRoute>
+                <RateChat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/trust-score"
+            element={
+              <ProtectedRoute>
+                <TrustScore />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </BrowserRouter>
