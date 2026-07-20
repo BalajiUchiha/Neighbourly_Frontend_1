@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Send, Zap } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
 import { timeAgo } from '../utils/helpers'
+import apiFetch from '../utils/api'
 
 const formatTime = (isoString) => {
   if (!isoString) return ''
@@ -42,7 +43,7 @@ export default function AskWorker() {
   const chatAreaRef = useRef(null)
   const inputRef = useRef(null)
 
-  const accessToken = localStorage.getItem('token');
+
 
   useEffect(() => {
     initSession()
@@ -52,9 +53,8 @@ export default function AskWorker() {
     setIsLoading(true)
     try {
       // Check if existing session exists for this post + worker + user
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/rag/session?post_id=${postId}&worker_id=${workerId}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+      const res = await apiFetch(
+        `/api/rag/session?post_id=${postId}&worker_id=${workerId}`
       )
       const data = await res.json()
 
@@ -105,13 +105,12 @@ export default function AskWorker() {
     }, 100)
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/rag/ask`,
+      const res = await apiFetch(
+        `/api/rag/ask`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             post_id: postId,
@@ -161,13 +160,12 @@ export default function AskWorker() {
   }
 
   const handleInvite = async () => {
-    await fetch(
-      `${import.meta.env.VITE_API_URL}/api/rag/invite`,
+    await apiFetch(
+      `/api/rag/invite`,
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           post_id: postId,

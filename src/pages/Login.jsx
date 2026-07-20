@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
-import api from '../utils/api';
+import { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import NeighbourlyLogo from '../assets/Neighbourly_logo_1_.png';
 

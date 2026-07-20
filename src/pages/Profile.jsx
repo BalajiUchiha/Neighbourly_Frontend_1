@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { timeAgo, formatDate, formatMonthYear } from '../utils/helpers'
+import apiFetch from '../utils/api'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -27,12 +28,9 @@ export default function Profile() {
     setIsLoading(true)
     try {
       const [profileRes, postsRes, reviewsRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/api/profile/me`,
-          { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/profile/my-posts`,
-          { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/ratings/my-reviews`,
-          { headers: { Authorization: `Bearer ${token}` } })
+        apiFetch(`/api/profile/me`),
+        apiFetch(`/api/profile/my-posts`),
+        apiFetch(`/api/ratings/my-reviews`)
       ])
       
       if (profileRes.ok && postsRes.ok && reviewsRes.ok) {

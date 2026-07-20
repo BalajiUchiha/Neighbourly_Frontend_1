@@ -6,7 +6,7 @@ import {
   ArrowLeft, ArrowRight, ChevronDown, Check, X, 
   AlertTriangle, AtSign, Volume2, RotateCcw, Plus
 } from 'lucide-react';
-import api from '../utils/api';
+import apiFetch, { api } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import NeighbourlyLogo from '../assets/Neighbourly_logo_1_.png';
 
@@ -108,8 +108,8 @@ export function Signup() {
       const fetchAndPlayAudio = async () => {
         try {
           const screenName = isComfortPopup ? "tech_comfort" : "worker_question";
-          const res = await fetch(
-            `${import.meta.env.VITE_API_URL || ''}/api/onboarding/audio?screen=${screenName}&language=${formData.preferred_language}`
+          const res = await apiFetch(
+            `/api/onboarding/audio?screen=${screenName}&language=${formData.preferred_language}`
           );
           if (!res.ok) {
             console.warn("Failed to fetch onboarding audio");

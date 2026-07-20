@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Users, Check, X } from 'lucide-react'
 import { timeAgo } from '../utils/helpers'
+import apiFetch from '../utils/api'
 
 const ALLOWED_API_BASE = import.meta.env.VITE_API_URL
 const isValidId = (id) => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,64}$/.test(id)
@@ -41,8 +42,7 @@ export default function Applicants() {
     if (!url) return
     setIsLoading(true)
     try {
-      const accessToken = localStorage.getItem('token')
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+      const res = await apiFetch(url)
       const data = await res.json()
       setPost(data.post)
       setApplicants(data.applicants || [])
@@ -62,8 +62,7 @@ export default function Applicants() {
     if (!isValidId(applicationId)) return
     const selectUrl = buildUrl(ALLOWED_API_BASE, applicationId, 'select')
     if (!selectUrl) return
-    const accessToken = localStorage.getItem('token')
-    const res = await fetch(selectUrl, { method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}` } })
+    const res = await apiFetch(selectUrl, { method: 'PATCH' })
     if (res.ok) {
       setApplicants(prev =>
         prev.map(a => a.id === applicationId ? { ...a, status: 'selected' } : a)
@@ -77,8 +76,7 @@ export default function Applicants() {
     if (!isValidId(applicationId)) return
     const rejectUrl = buildUrl(ALLOWED_API_BASE, applicationId, 'reject')
     if (!rejectUrl) return
-    const accessToken = localStorage.getItem('token')
-    const res = await fetch(rejectUrl, { method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}` } })
+    const res = await apiFetch(rejectUrl, { method: 'PATCH' })
     if (res.ok) {
       setApplicants(prev =>
         prev.map(a => a.id === applicationId ? { ...a, status: 'rejected' } : a)

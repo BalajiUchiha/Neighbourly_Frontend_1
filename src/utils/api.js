@@ -1,5 +1,61 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+export const apiFetch = async (url, options = {}) => {
+  const fullUrl = (url.startsWith('http://') || url.startsWith('https://')) 
+    ? url 
+    : `${API_URL}${url}`;
+  
+  const token = localStorage.getItem('token');
+  const headers = { ...options.headers };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  let res = await fetch(fullUrl, {
+    ...options,
+    headers,
+  });
+  
+  let isAuthEndpoint = false;
+  try {
+    const parsedUrl = new URL(fullUrl, window.location.origin);
+    isAuthEndpoint = parsedUrl.pathname.includes('/api/auth/refresh') || parsedUrl.pathname.includes('/api/auth/login');
+  } catch (e) {
+    isAuthEndpoint = url.includes('/api/auth/refresh') || url.includes('/api/auth/login');
+  }
+
+  if (res.status === 401 && !isAuthEndpoint) {
+    try {
+      const refreshRes = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      if (refreshRes.ok) {
+        const data = await refreshRes.json();
+        localStorage.setItem('token', data.access_token);
+        headers['Authorization'] = `Bearer ${data.access_token}`;
+        
+        res = await fetch(fullUrl, {
+          ...options,
+          headers,
+        });
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return res;
+      }
+    } catch (e) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      return res;
+    }
+  }
+  return res;
+};
+
 export const api = {
   async request(endpoint, options = {}) {
     const headers = { ...options.headers };
@@ -96,4 +152,5 @@ export const api = {
   },
 };
 
-export default api;
+export default apiFetch;
+

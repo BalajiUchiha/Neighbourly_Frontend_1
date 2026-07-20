@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { timeAgo } from '../utils/helpers'
 import { useAuth } from '../context/AuthContext'
+import apiFetch from '../utils/api'
 
 export default function TrustScore() {
   const navigate = useNavigate()
@@ -24,9 +25,8 @@ export default function TrustScore() {
     const fetchTrustData = async () => {
       setIsLoading(true)
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/ratings/trust-score`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+        const res = await apiFetch(
+          `/api/ratings/trust-score`
         )
         if (res.ok) {
           const data = await res.json()

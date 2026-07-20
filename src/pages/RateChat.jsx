@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { formatDate } from '../utils/helpers'
 import { useAuth } from '../context/AuthContext'
+import apiFetch from '../utils/api'
 
 export default function RateChat() {
   const { chatId } = useParams()
@@ -30,9 +31,8 @@ export default function RateChat() {
 
   const fetchRatingContext = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/ratings/context/${chatId}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+      const res = await apiFetch(
+        `/api/ratings/context/${chatId}`
       )
       if (res.ok) {
         const data = await res.json()
@@ -56,13 +56,12 @@ export default function RateChat() {
     if (rating === 0) return
     setIsSubmitting(true)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/ratings/submit`,
+      const res = await apiFetch(
+        `/api/ratings/submit`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             chat_id: chatId,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Mic, PenLine, Plus, X, ChevronRight, ChevronDown, RotateCcw, Sparkles, Check, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { api } from '../utils/api';
 
 export default function CreatePost() {
   const navigate = useNavigate();

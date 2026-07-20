@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { timeAgo } from '../utils/helpers'
+import apiFetch from '../utils/api'
 
 export default function Notifications() {
   const navigate = useNavigate()
@@ -22,9 +23,8 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notifications`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await apiFetch(
+        `/api/notifications`
       )
       if (res.ok) {
         const data = await res.json()
@@ -40,9 +40,9 @@ export default function Notifications() {
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notifications/mark-all-read`,
-        { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } }
+      await apiFetch(
+        `/api/notifications/mark-all-read`,
+        { method: 'PATCH' }
       )
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
       setUnreadCount(0)
@@ -55,9 +55,9 @@ export default function Notifications() {
     // Mark as read
     if (!notification.is_read) {
       try {
-        await fetch(
-          `${import.meta.env.VITE_API_URL}/api/notifications/${notification.id}/read`,
-          { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } }
+        await apiFetch(
+          `/api/notifications/${notification.id}/read`,
+          { method: 'PATCH' }
         )
         setNotifications(prev =>
           prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n)

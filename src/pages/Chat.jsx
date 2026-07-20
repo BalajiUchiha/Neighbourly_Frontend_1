@@ -3,6 +3,7 @@ import { ArrowLeft, Send, FileText } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { formatDate, timeAgo } from '../utils/helpers'
 import { useAuth } from '../context/AuthContext'
+import apiFetch from '../utils/api'
 
 const formatTime = (isoString) => {
   if (!isoString) return ''
@@ -18,10 +19,6 @@ export default function Chat() {
   const { token: accessToken, user } = useAuth()
   const currentUserId = user?.id
 
-  const isPoster = chat && currentUserId ? currentUserId === chat.poster_id : false
-  const isWorkDatePassed = chat?.work_date
-    ? new Date(chat.work_date) <= new Date()
-    : false
 
   // State management
   const [chat, setChat] = useState(null)
@@ -39,6 +36,12 @@ export default function Chat() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Derived — must come after state declarations
+  const isPoster = chat && currentUserId ? currentUserId === chat.poster_id : false
+  const isWorkDatePassed = chat?.work_date
+    ? new Date(chat.work_date) <= new Date()
+    : false
   
   const chatAreaRef = useRef(null)
   const inputRef = useRef(null)
@@ -52,11 +55,10 @@ export default function Chat() {
 
   const handleMarkComplete = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/chats/${chatId}/complete`,
+      const res = await apiFetch(
+        `/api/chats/${chatId}/complete`,
         {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${accessToken}` }
+          method: 'POST'
         }
       )
       if (res.ok) {
@@ -72,9 +74,8 @@ export default function Chat() {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/chats/${chatId}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
+      const res = await apiFetch(
+        `/api/chats/${chatId}`
       )
       if (!res.ok) {
         throw new Error('Failed to load chat details')
@@ -140,9 +141,9 @@ export default function Chat() {
     }])
 
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/chats/${chatId}/message`, {
+      await apiFetch(`/api/chats/${chatId}/message`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: text, message_type: 'text' })
       })
     } catch (err) {
@@ -152,9 +153,9 @@ export default function Chat() {
 
   const handleAcceptPay = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/chats/${chatId}/accept-pay`,
-        { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } }
+      const res = await apiFetch(
+        `/api/chats/${chatId}/accept-pay`,
+        { method: 'POST' }
       )
       const data = await res.json()
       setChat(prev => ({ ...prev, bargain_status: 'skipped', agreed_pay: data.agreed_pay }))
@@ -173,11 +174,11 @@ export default function Chat() {
     setShowBargainSheet(false)
     setShowCounterSheet(false)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/chats/${chatId}/bargain`,
+      const res = await apiFetch(
+        `/api/chats/${chatId}/bargain`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ proposed_amount: parseInt(bargainAmount) })
         }
       )
@@ -197,11 +198,11 @@ export default function Chat() {
 
   const handleBargainResponse = async (action) => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/chats/${chatId}/bargain-respond`,
+      const res = await apiFetch(
+        `/api/chats/${chatId}/bargain-respond`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action, bargain_round_id: currentBargain.id })
         }
       )
@@ -229,11 +230,11 @@ export default function Chat() {
     if (!selectedDate || !selectedTimeSlot) return
     setShowDateSheet(false)
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/chats/${chatId}/confirm-date`,
+      const res = await apiFetch(
+        `/api/chats/${chatId}/confirm-date`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ work_date: selectedDate, work_time_slot: selectedTimeSlot })
         }
       )
@@ -471,7 +472,7 @@ export default function Chat() {
           }
 
           // Default text bubbles
-          const isMe = msg.sender_id === currentUserId || msg.role === 'user'
+          const isMe = msg.sender_id === currentUserId
           return (
             <div
               key={i}

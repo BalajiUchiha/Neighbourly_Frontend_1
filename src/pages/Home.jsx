@@ -11,7 +11,7 @@ import {
   Users, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import apiFetch, { api } from '../utils/api';
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 const getImageUrl = (url) => {
@@ -270,12 +270,10 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
     if (hasApplied || isApplying) return
     setIsApplying(true)
     try {
-      const accessToken = localStorage.getItem('token')
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/applications/apply`, {
+      const res = await apiFetch(`/api/applications/apply`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ post_id: post.id, note: null, counter_wage: null })
       })
@@ -294,12 +292,10 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
   }
 
   const handleInviteWorker = async (workerId, postId) => {
-    const accessToken = localStorage.getItem('token');
-    await fetch(`${import.meta.env.VITE_API_URL}/api/rag/invite`, {
+    await apiFetch(`/api/rag/invite`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ worker_id: workerId, post_id: postId })
     })
@@ -717,9 +713,8 @@ export function Home() {
   const fetchUnreadCount = async () => {
     if (!token) return;
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notifications/unread-count`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await apiFetch(
+        `/api/notifications/unread-count`
       );
       if (res.ok) {
         const data = await res.json();
@@ -1032,6 +1027,8 @@ export function Home() {
                 onClick={() => {
                   if (nav.id === 'profile') {
                     navigate('/profile');
+                  } else if (nav.id === 'explore') {
+                    navigate('/explore');
                   } else {
                     setActiveNav(nav.id);
                   }
