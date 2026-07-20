@@ -350,8 +350,8 @@ export default function Profile() {
         <div className="flex items-center justify-around py-2">
           {[
             { id:'home',    icon:<HomeIcon size={22} />,       label:'Home',    path: '/home'   },
-            { id:'explore', icon:<Compass size={22} />,        label:'Explore', path: '/home' },
-            { id:'chats',   icon:<MessageSquare size={22} />,  label:'Chats',   path: '/home', badge: 2 },
+            { id:'explore', icon:<Compass size={22} />,        label:'Explore', path: '/explore' },
+            { id:'chats',   icon:<MessageSquare size={22} />,  label:'Chats',   path: '/chats', badge: 2 },
             { id:'profile', icon:<UserCircle size={22} />,     label:'Profile', path: '/profile' },
           ].map(nav => {
             const isActive = nav.id === 'profile';

@@ -523,7 +523,7 @@ export default function Avatar() {
   return (
     <>
       {/* ── Floating Avatar Button (Red theme) ── */}
-      <div className="fixed bottom-20 left-4 z-40">
+      <div className="fixed bottom-20 left-4 z-[9999]">
         <button
           onClick={handleAvatarTap}
           onTouchStart={handleHoldStart}
@@ -552,7 +552,7 @@ export default function Avatar() {
       {/* ── History Panel ── */}
       {showHistory && (
         <div
-          className="fixed inset-0 z-50 flex items-end transition-opacity duration-300"
+          className="fixed inset-0 z-[100000] flex items-end transition-opacity duration-300"
           style={{ background: 'rgba(10,0,0,0.6)', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowHistory(false)}
         >
@@ -636,7 +636,7 @@ export default function Avatar() {
       {/* ── Full-screen Avatar Overlay ── */}
       {showFullScreen && (
         <div
-          className="fixed inset-0 z-50 avatar-fullscreen-overlay"
+          className="fixed inset-0 z-[99999] avatar-fullscreen-overlay"
           style={{
             background: isListeningState
               ? 'rgba(0, 0, 0, 0.08)'

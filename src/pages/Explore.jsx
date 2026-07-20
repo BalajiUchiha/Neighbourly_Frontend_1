@@ -736,7 +736,7 @@ export default function Explore() {
           {[
             { id: 'home',    icon: <HomeIcon size={22} />,      label: 'Home',    path: '/home' },
             { id: 'explore', icon: <Compass size={22} />,       label: 'Explore', path: '/explore' },
-            { id: 'chats',   icon: <MessageSquare size={22} />, label: 'Chats',   path: null },
+            { id: 'chats',   icon: <MessageSquare size={22} />, label: 'Chats',   path: '/chats' },
             { id: 'profile', icon: <UserCircle size={22} />,    label: 'Profile', path: '/profile' },
           ].map(nav => {
             const isActive = activeNav === nav.id;

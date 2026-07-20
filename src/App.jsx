@@ -14,6 +14,7 @@ import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
 import Explore from './pages/Explore';
+import Chats from './pages/Chats';
 
 function App() {
   return (
@@ -107,6 +108,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Explore />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chats"
+            element={
+              <ProtectedRoute>
+                <Chats />
               </ProtectedRoute>
             }
           />

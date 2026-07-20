@@ -1029,6 +1029,8 @@ export function Home() {
                     navigate('/profile');
                   } else if (nav.id === 'explore') {
                     navigate('/explore');
+                  } else if (nav.id === 'chats') {
+                    navigate('/chats');
                   } else {
                     setActiveNav(nav.id);
                   }
