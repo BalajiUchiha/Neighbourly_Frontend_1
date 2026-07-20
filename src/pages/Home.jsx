@@ -712,6 +712,23 @@ export function Home() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
   const profileRef = useRef(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/notifications/unread-count`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.count);
+      }
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err);
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -726,6 +743,8 @@ export function Home() {
   useEffect(() => {
     if (!token) {
       navigate('/login');
+    } else {
+      fetchUnreadCount();
     }
   }, [token, navigate]);
 
@@ -799,20 +818,32 @@ export function Home() {
         <div className="flex items-center justify-between px-4 py-3">
 
           {/* Location */}
-          <button className="flex items-center gap-1.5 active:opacity-70">
-            <MapPin size={16} className="text-primary flex-shrink-0" />
-            <div>
-              <span className="font-bold text-[15px] text-text-primary">{areaName}</span>
-              <ChevronDown size={13} className="inline-block ml-0.5 text-text-secondary" />
-            </div>
-          </button>
+          {activeNav === 'profile' ? (
+            <p className="font-bold text-[16px] text-text-primary">My Profile</p>
+          ) : (
+            <button className="flex items-center gap-1.5 active:opacity-70">
+              <MapPin size={16} className="text-primary flex-shrink-0" />
+              <div>
+                <span className="font-bold text-[15px] text-text-primary">{areaName}</span>
+                <ChevronDown size={13} className="inline-block ml-0.5 text-text-secondary" />
+              </div>
+            </button>
+          )}
 
           {/* Right actions */}
           <div className="flex items-center gap-2.5">
             {/* Notification */}
-            <button id="notif-btn" className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface transition-colors">
-              <Bell size={21} className="text-text-primary" strokeWidth={1.8} />
-              <NotifBadge count={1} />
+            <button
+              id="notif-btn"
+              onClick={() => navigate('/notifications')}
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface transition-colors"
+            >
+              <Bell size={22} className="text-text-primary" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {/* Profile */}
@@ -829,7 +860,7 @@ export function Home() {
                     <p className="text-[12px] text-text-secondary">@{user?.username}</p>
                   </div>
                   <div className="py-1">
-                    <button id="menu-profile" className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-surface text-[13px] text-text-primary">
+                    <button id="menu-profile" onClick={() => { navigate('/profile'); setShowProfileMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-surface text-[13px] text-text-primary">
                       <User size={14} className="text-text-secondary" /> Profile
                     </button>
                     <button id="menu-settings" className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-surface text-[13px] text-text-primary">
@@ -847,101 +878,143 @@ export function Home() {
         </div>
 
         {/* ── Story / Category circles ── */}
-        <div className="flex gap-3.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
-          {STORIES.map(s => (
-            <StoryCircle key={s.id} story={s} active={activeFilter === s.id}
-              onClick={() => setActiveFilter(s.id)} />
-          ))}
-        </div>
+        {activeNav !== 'profile' && (
+          <div className="flex gap-3.5 px-4 pb-3 overflow-x-auto scrollbar-hide">
+            {STORIES.map(s => (
+              <StoryCircle key={s.id} story={s} active={activeFilter === s.id}
+                onClick={() => setActiveFilter(s.id)} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ═══ SCROLL BODY ══════════════════════════════════════════════════════ */}
       <div className="pb-28">
 
-        {/* 8. Error state */}
-        {error && (
-          <div className="mx-4 mt-6 bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-200">
-            <p className="text-[15px] font-bold text-slate-700 mb-4">⚠️ Could not load posts</p>
-            <button onClick={loadHomeScreen} className="btn-outline">
-              [ Try again ]
-            </button>
-          </div>
-        )}
+        {activeNav === 'profile' ? (
+          <div className="mx-4 mt-4 flex flex-col gap-4">
+            {/* User Profile Card */}
+            <div className="card p-4 flex items-center gap-3 bg-white border border-border rounded-xl">
+              <Avatar name={user?.name} photoUrl={user?.photo_url} size={54} />
+              <div>
+                <p className="font-bold text-[15px] text-text-primary">{user?.name || 'Neighbour'}</p>
+                <p className="text-[12px] text-text-secondary">@{user?.username}</p>
+                <p className="text-[11px] text-text-secondary mt-0.5">{user?.email || user?.phone}</p>
+              </div>
+            </div>
 
-        {/* 6. Loading state */}
-        {isLoading && !error && (
-          <div className="mt-2">
-            <SkeletonPostCard />
-            <SkeletonPostCard />
-            <SkeletonPostCard />
-          </div>
-        )}
-
-        {/* Feed content */}
-        {!isLoading && !error && posts.length > 0 && (
-          <div className="mt-2">
-            {posts.map(post => {
-              if (post.is_own_post) {
-                // Not specified explicitly to use ActivePostCard, but 
-                // prompt mentioned: "Pass isOwnPost={post.is_own_post} — do not compute it on frontend anymore, trust the backend value."
-                // I will pass it to PostCard as requested.
-                // Wait, if ActivePostCard is used, it should be top of feed? Yes, loadHomeScreen places it at index 0.
-                // I will just use PostCard for all, but pass isOwnPost as requested! 
-                // But the original code had ActivePostCard for MY_POST. 
-                // Let's keep ActivePostCard if it's the own post (with applied count etc) or just PostCard?
-                // The prompt literally said: "Pass isOwnPost={post.is_own_post} — do not compute it on frontend anymore, trust the backend value."
-                // I will use PostCard for everything and remove ActivePostCard completely? 
-                // Wait, in my loadHomeScreen I did: "if (activePostData.post) { feedPosts = [activePostData.post, ...feedPosts] }"
-                // So it's in the posts array. I will use ActivePostCard if is_own_post, else PostCard.
-                // But the prompt says "Pass isOwnPost={post.is_own_post} [to PostCard]"
-                return (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    isOwnPost={post.is_own_post}
-                    onLike={handleLike}
-                    onSave={handleSave}
-                  />
-                );
-              }
-              return (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  isOwnPost={post.is_own_post}
-                  onLike={handleLike}
-                  onSave={handleSave}
-                />
-              );
-            })}
-
-            {/* Bottom spacer label */}
-            <div className="flex items-center justify-center py-6 gap-2">
-              <span className="text-[12px] text-text-disabled font-medium">You're all caught up 🎉</span>
+            {/* Trust Score Card */}
+            <div 
+              onClick={() => navigate('/profile/trust-score')}
+              className="card p-4 bg-gradient-to-br from-primary to-primary-dark text-white cursor-pointer active:scale-98 transition-transform rounded-2xl shadow-sm"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <p className="font-bold text-[13px] text-white text-opacity-90">Your Trust Score</p>
+                <span className="text-[10px] bg-white bg-opacity-20 px-2 py-0.5 rounded-full font-semibold">
+                  Details →
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold">{user?.trust_score ?? 85}</span>
+                <span className="text-[11px] opacity-80">/100</span>
+              </div>
+              <p className="text-[10px] opacity-75 mt-1">
+                Badge: {user?.trust_badge ? user.trust_badge.charAt(0).toUpperCase() + user.trust_badge.slice(1) : 'Growing'}
+              </p>
+            </div>
+            
+            {/* Settings & Logout Card */}
+            <div className="card bg-white border border-border rounded-xl overflow-hidden">
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-red-50 text-[13px] text-danger transition-colors font-semibold"
+              >
+                <LogOut size={16} className="text-danger" /> Logout
+              </button>
             </div>
           </div>
-        )}
+        ) : (
+          <>
+            {/* 8. Error state */}
+            {error && (
+              <div className="mx-4 mt-6 bg-white rounded-2xl p-6 text-center shadow-sm border border-slate-200">
+                <p className="text-[15px] font-bold text-slate-700 mb-4">⚠️ Could not load posts</p>
+                <button onClick={loadHomeScreen} className="btn-outline">
+                  [ Try again ]
+                </button>
+              </div>
+            )}
 
-        {/* 7. Empty state */}
-        {!isLoading && !error && posts.length === 0 && (
-          <div className="flex items-center justify-center py-6 gap-2">
-            <span className="text-[12px] text-text-disabled font-medium">You're all caught up 🎉</span>
-          </div>
+            {/* 6. Loading state */}
+            {isLoading && !error && (
+              <div className="mt-2">
+                <SkeletonPostCard />
+                <SkeletonPostCard />
+                <SkeletonPostCard />
+              </div>
+            )}
+
+            {/* Feed content */}
+            {!isLoading && !error && posts.length > 0 && (
+              <div className="mt-2">
+                {posts.map(post => {
+                  if (post.is_own_post) {
+                    // Not specified explicitly to use ActivePostCard, but 
+                    // prompt mentioned: "Pass isOwnPost={post.is_own_post} — do not compute it on frontend anymore, trust the backend value."
+                    // I will pass it to PostCard as requested.
+                    // Pin own active post at top if exists
+                    return (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        isOwnPost={post.is_own_post}
+                        onLike={handleLike}
+                        onSave={handleSave}
+                      />
+                    );
+                  }
+                  return (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      isOwnPost={post.is_own_post}
+                      onLike={handleLike}
+                      onSave={handleSave}
+                    />
+                  );
+                })}
+
+                {/* Bottom spacer label */}
+                <div className="flex items-center justify-center py-6 gap-2">
+                  <span className="text-[12px] text-text-disabled font-medium">You're all caught up 🎉</span>
+                </div>
+              </div>
+            )}
+
+            {/* 7. Empty state */}
+            {!isLoading && !error && posts.length === 0 && (
+              <div className="flex items-center justify-center py-6 gap-2">
+                <span className="text-[12px] text-text-disabled font-medium">You're all caught up 🎉</span>
+              </div>
+            )}
+          </>
         )}
 
       </div>
 
       {/* ═══ FLOATING + BUTTON ═══════════════════════════════════════════════ */}
-      <button id="create-post-btn"
-        onClick={() => navigate('/post/create')}
-        className="fixed z-50 flex items-center justify-center rounded-full transition-all active:scale-90"
-        style={{
-          bottom: 76, right: 16, width: 52, height: 52,
-          background: 'linear-gradient(135deg,#2B7EC1,#1A4F7A)',
-          boxShadow: '0 6px 20px rgba(43,126,193,0.45)',
-        }}>
-        <Plus size={22} className="text-white" strokeWidth={2.5} />
-      </button>
+      {activeNav !== 'profile' && (
+        <button id="create-post-btn"
+          onClick={() => navigate('/post/create')}
+          className="fixed z-50 flex items-center justify-center rounded-full transition-all active:scale-90"
+          style={{
+            bottom: 76, right: 16, width: 52, height: 52,
+            background: 'linear-gradient(135deg,#2B7EC1,#1A4F7A)',
+            boxShadow: '0 6px 20px rgba(43,126,193,0.45)',
+          }}>
+          <Plus size={22} className="text-white" strokeWidth={2.5} />
+        </button>
+      )}
 
       {/* ═══ BOTTOM NAVIGATION ═══════════════════════════════════════════════ */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white"
@@ -956,7 +1029,13 @@ export function Home() {
             const isActive = activeNav === nav.id;
             return (
               <button key={nav.id} id={`nav-${nav.id}`}
-                onClick={() => setActiveNav(nav.id)}
+                onClick={() => {
+                  if (nav.id === 'profile') {
+                    navigate('/profile');
+                  } else {
+                    setActiveNav(nav.id);
+                  }
+                }}
                 className="flex flex-col items-center gap-0.5 px-4 py-1 relative">
                 <span className="relative">
                   <span style={{ color: isActive ? '#2B7EC1' : '#94A3B8' }}>{nav.icon}</span>
