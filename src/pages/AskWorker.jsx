@@ -3,6 +3,7 @@ import { ArrowLeft, Send, Zap } from 'lucide-react'
 import { useRef, useState, useEffect } from 'react'
 import { timeAgo } from '../utils/helpers'
 import apiFetch from '../utils/api'
+import idleImg from '../assets/avatar/Neutral.png'
 
 const formatTime = (isoString) => {
   if (!isoString) return ''
@@ -194,10 +195,11 @@ export default function AskWorker() {
           </button>
           <img
             src={worker.photo_url || '/assets/default-avatar.png'}
-            className="w-9 h-9 rounded-full object-cover border border-border"
+            className="w-9 h-9 rounded-full object-cover border border-border cursor-pointer"
+            onClick={() => navigate(`/profile/${worker.id}`)}
           />
           <div>
-            <p className="font-bold text-[14px] text-text-primary">{worker.name}</p>
+            <p className="font-bold text-[14px] text-text-primary">Ask Monica✨ about {worker.name.split(' ')[0]}</p>
             <p className="text-[11px] text-text-secondary">
               ★ {worker.trust_score_display || 'New'} · {worker.distance_km || 0} km away
             </p>
@@ -205,9 +207,9 @@ export default function AskWorker() {
         </div>
 
         {/* Right — credit counter */}
-        <div className="flex items-center gap-1.5 bg-surface border border-border rounded-full px-3 py-1.5">
-          <Zap size={12} className="text-primary" />
-          <span className="text-[11px] font-semibold text-primary">
+        <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-full px-3 py-1.5">
+          <Zap size={12} className="text-[#E74C3C]" />
+          <span className="text-[11px] font-bold text-[#E74C3C]">
             {credits} credits
           </span>
         </div>
@@ -238,7 +240,7 @@ export default function AskWorker() {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[13px] font-bold text-primary">★ {worker.trust_score_display || 'New'}</p>
+              <p className="text-[13px] font-bold text-[#E74C3C]">★ {worker.trust_score_display || 'New'}</p>
               <p className="text-[10px] text-text-secondary">{worker.total_jobs || 0} jobs</p>
             </div>
           </div>
@@ -257,9 +259,9 @@ export default function AskWorker() {
           </div>
 
           {/* AI intro message */}
-          <div className="mt-3 bg-primary bg-opacity-5 border border-primary border-opacity-20 rounded-xl p-2.5">
-            <p className="text-[12px] text-primary font-medium">
-              🤖 Ask me anything about {worker.name.split(' ')[0]}
+          <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-2.5">
+            <p className="text-[12px] text-[#E74C3C] font-bold flex items-center gap-1.5">
+              ✨ Ask Monica✨ about {worker.name.split(' ')[0]}
             </p>
             <p className="text-[11px] text-text-secondary mt-0.5">
               Past work, ratings, reliability, bargaining history — I have it all.
@@ -278,7 +280,7 @@ export default function AskWorker() {
                 <button
                   key={i}
                   onClick={() => handleSuggestedQuestion(q)}
-                  className="text-left bg-surface border border-border rounded-xl px-3 py-2.5 text-[12px] text-text-primary hover:border-primary transition-colors"
+                  className="text-left bg-surface border border-border rounded-xl px-3 py-2.5 text-[12px] text-text-primary hover:border-[#E74C3C] transition-colors"
                 >
                   {q}
                 </button>
@@ -292,18 +294,22 @@ export default function AskWorker() {
             key={i}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            {/* Assistant avatar */}
+            {/* Assistant avatar using Monica neutral avatar */}
             {msg.role === 'assistant' && (
-              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center mr-2 flex-shrink-0 self-end">
-                <span className="text-white text-[10px] font-bold">AI</span>
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-red-300 flex-shrink-0 self-end mr-2 bg-slate-900 shadow-sm">
+                <img src={idleImg} alt="Monica✨" className="w-full h-full object-cover" />
               </div>
             )}
 
             <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 ${
               msg.role === 'user'
-                ? 'bg-primary text-white rounded-br-sm'
+                ? 'text-white rounded-br-sm'
                 : 'bg-surface border border-border text-text-primary rounded-bl-sm'
-            }`}>
+            }`}
+            style={{
+              background: msg.role === 'user' ? 'linear-gradient(135deg, #E74C3C, #C0392B)' : undefined
+            }}
+            >
               <p className="text-[13px] leading-relaxed">{msg.content}</p>
               <div className="flex items-center justify-between mt-1 gap-2">
                 <p className={`text-[10px] ${
@@ -324,14 +330,14 @@ export default function AskWorker() {
         {/* AI typing indicator */}
         {isTyping && (
           <div className="flex justify-start">
-            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center mr-2 flex-shrink-0 self-end">
-              <span className="text-white text-[10px] font-bold">AI</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-red-300 flex-shrink-0 self-end mr-2 bg-slate-900 shadow-sm">
+              <img src={idleImg} alt="Monica✨" className="w-full h-full object-cover" />
             </div>
             <div className="bg-surface border border-border rounded-2xl rounded-bl-sm px-4 py-3">
               <div className="flex gap-1 items-center">
-                <div className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce" style={{animationDelay: '0ms'}} />
-                <div className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce" style={{animationDelay: '150ms'}} />
-                <div className="w-1.5 h-1.5 bg-text-secondary rounded-full animate-bounce" style={{animationDelay: '300ms'}} />
+                <div className="w-1.5 h-1.5 bg-[#E74C3C] rounded-full animate-bounce" style={{animationDelay: '0ms'}} />
+                <div className="w-1.5 h-1.5 bg-[#E74C3C] rounded-full animate-bounce" style={{animationDelay: '150ms'}} />
+                <div className="w-1.5 h-1.5 bg-[#E74C3C] rounded-full animate-bounce" style={{animationDelay: '300ms'}} />
               </div>
             </div>
           </div>

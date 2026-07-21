@@ -154,7 +154,11 @@ export default function Applicants() {
                 <div className="relative flex-shrink-0">
                   <img
                     src={applicant.photo_url || '/assets/default-avatar.png'}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-border"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-border cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/profile/${applicant.worker_id}`)
+                    }}
                   />
                   <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
                     applicant.trust_score >= 70 ? 'bg-blue-600' :

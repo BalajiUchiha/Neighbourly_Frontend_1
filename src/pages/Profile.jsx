@@ -1,4 +1,4 @@
-import { Settings, Check, Star, Home as HomeIcon, Compass, MessageSquare, UserCircle } from 'lucide-react'
+import { Settings, Check, Star, Home as HomeIcon, Compass, MessageSquare, UserCircle, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
@@ -17,6 +17,7 @@ export default function Profile() {
   const [postFilter, setPostFilter] = useState('active')
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [agreements, setAgreements] = useState([])
 
   useEffect(() => {
     if (token) {
@@ -43,6 +44,17 @@ export default function Profile() {
         setStats(profileData.stats)
         setMyPosts(postsData.posts || [])
         setReviews(reviewsData.reviews || [])
+      }
+
+      // Fetch agreements separately (non-blocking)
+      try {
+        const agreementsRes = await apiFetch(`/api/profile/my-agreements`)
+        if (agreementsRes.ok) {
+          const agreementsData = await agreementsRes.json()
+          setAgreements(agreementsData.agreements || [])
+        }
+      } catch (agrErr) {
+        console.error('Failed to fetch agreements:', agrErr)
       }
     } catch (err) {
       console.error("Failed to fetch profile details:", err)
@@ -293,6 +305,50 @@ export default function Profile() {
               Create your first post →
             </button>
           </div>
+        )}
+      </div>
+
+      {/* My Agreements */}
+      <div className="mx-4 mt-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-bold text-[13px] text-text-primary">My Agreements</p>
+          <FileText size={16} className="text-text-secondary" />
+        </div>
+
+        {agreements.length === 0 ? (
+          <div className="card p-4 text-center bg-white border border-border rounded-xl">
+            <p className="text-text-secondary text-[13px]">No agreements yet</p>
+            <p className="text-text-disabled text-[11px] mt-1">
+              Agreements appear after confirming work dates
+            </p>
+          </div>
+        ) : (
+          agreements.map(agreement => (
+            <div key={agreement.id} className="card p-3 mb-2 flex items-center gap-3 bg-white border border-border rounded-xl">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <FileText size={18} className="text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[13px] text-text-primary truncate">
+                  {agreement.task_description?.slice(0, 40) || 'Job Agreement'}
+                </p>
+                <p className="text-[11px] text-text-secondary">
+                  ₹{agreement.agreed_pay}/day · {formatDate(agreement.work_date)}
+                </p>
+                <p className="text-[10px] text-text-disabled mt-0.5">
+                  {agreement.other_party_name}
+                </p>
+              </div>
+              <a
+                href={`${import.meta.env.VITE_API_URL}${agreement.pdf_url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-primary font-medium flex-shrink-0"
+              >
+                View →
+              </a>
+            </div>
+          ))
         )}
       </div>
 

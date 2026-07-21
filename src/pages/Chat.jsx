@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, FileText } from 'lucide-react'
+import { ArrowLeft, Send, FileText, ExternalLink, ChevronRight } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { formatDate, timeAgo } from '../utils/helpers'
 import { useAuth } from '../context/AuthContext'
@@ -69,6 +69,19 @@ export default function Chat() {
     }
   }
 
+  const handleGenerateAgreement = async () => {
+    try {
+      const res = await apiFetch(
+        `/api/chats/${chatId}/generate-agreement`,
+        { method: 'POST' }
+      )
+      const data = await res.json()
+      setChat(prev => ({ ...prev, agreement_pdf_url: data.agreement_pdf_url }))
+    } catch (err) {
+      console.error('Failed to generate agreement:', err)
+    }
+  }
+
   // Fetch chat details
   const fetchChat = async () => {
     setIsLoading(true)
@@ -106,6 +119,17 @@ export default function Chat() {
       scrollToBottom()
     }
   }, [messages.length, isLoading])
+
+  // Listen for avatar reply insertion
+  useEffect(() => {
+    const handleAvatarReply = (e) => {
+      setInputText(e.detail.text)
+      // Focus the input
+      inputRef.current?.focus()
+    }
+    window.addEventListener('avatarInsertReply', handleAvatarReply)
+    return () => window.removeEventListener('avatarInsertReply', handleAvatarReply)
+  }, [])
 
   // Input disabling logic
   const isInputDisabled = chat && post ? (
@@ -403,21 +427,36 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Agreement PDF Banner — shown after date confirmed */}
-      {chat.work_date_confirmed && chat.agreement_pdf_url && (
-        <div className="mx-4 mt-3 bg-surface border border-border rounded-xl px-3 py-2.5 flex items-center justify-between shadow-xs animate-fade-in-up">
-          <div className="flex items-center gap-2">
-            <FileText size={16} className="text-primary" />
-            <span className="text-[12px] font-semibold text-text-primary">Job Agreement Ready</span>
-          </div>
-          <a
-            href={chat.agreement_pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] text-primary font-semibold hover:underline"
-          >
-            View PDF →
-          </a>
+      {/* Agreement PDF Section — shown after date confirmed */}
+      {chat.work_date_confirmed && (
+        <div className="mx-4 mt-2 mb-2 flex flex-col gap-2">
+          {chat.agreement_pdf_url ? (
+            <a
+              href={`${import.meta.env.VITE_API_URL}${chat.agreement_pdf_url}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3"
+            >
+              <FileText size={18} className="text-primary flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-text-primary">Job Agreement</p>
+                <p className="text-[11px] text-text-secondary">Tap to view your agreement PDF</p>
+              </div>
+              <ExternalLink size={14} className="text-text-secondary" />
+            </a>
+          ) : (
+            <button
+              onClick={handleGenerateAgreement}
+              className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3"
+            >
+              <FileText size={18} className="text-primary flex-shrink-0" />
+              <div className="flex-1 text-left">
+                <p className="text-[13px] font-semibold text-text-primary">Generate Agreement</p>
+                <p className="text-[11px] text-text-secondary">Create your job agreement PDF</p>
+              </div>
+              <ChevronRight size={14} className="text-text-secondary" />
+            </button>
+          )}
         </div>
       )}
 

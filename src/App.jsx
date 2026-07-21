@@ -12,6 +12,7 @@ import Rate from './pages/RateChat';
 import TrustScore from './pages/TrustScore';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
+import ViewProfile from './pages/ViewProfile';
 import EditProfile from './pages/EditProfile';
 import Explore from './pages/Explore';
 import Chats from './pages/Chats';
@@ -100,6 +101,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EditProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:userId"
+            element={
+              <ProtectedRoute>
+                <ViewProfile />
               </ProtectedRoute>
             }
           />

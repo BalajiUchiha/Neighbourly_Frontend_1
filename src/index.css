@@ -1,6 +1,6 @@
 @import "tailwindcss";
-@config "../tailwind.config.js";
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@config "../tailwind.config.js";
 
 @layer base {
   body {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, ChevronLeft, Play, Pause } from 'lucide-react';
+import { X, ChevronLeft, Play, Pause, MessageSquare } from 'lucide-react';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,6 +33,43 @@ const getStepIndex = (state) => {
   return 0;
 };
 
+const getQuickQuestions = (screenContext, content) => {
+  const ctx = (screenContext || window.location.pathname || '').toLowerCase();
+  if (ctx.includes('chat') || ctx.includes('bargain')) {
+    return [
+      'How should I reply?',
+      'Is this pay fair?',
+      'Should I accept this offer?',
+      'How do I counter this?'
+    ];
+  }
+  if (ctx.includes('profile')) {
+    return [
+      'Is this person reliable?',
+      'What do their ratings mean?',
+      'What are their top skills?',
+      'Is their experience genuine?'
+    ];
+  }
+  if (ctx.includes('applicant')) {
+    return [
+      'Should I hire this person?',
+      'Is this applicant reliable?',
+      'What is their expected wage?',
+      'Have they completed past jobs?'
+    ];
+  }
+  if (ctx.includes('post') || ctx.includes('home') || ctx.includes('explore')) {
+    return [
+      'How to apply for this?',
+      'Is this suitable for me?',
+      'What skills do I need?',
+      'How much will I earn?'
+    ];
+  }
+  return ['What does this mean?', 'What should I do?', 'Explain simply', 'How to proceed?'];
+};
+
 export default function Avatar() {
   const { token, user } = useAuth();
 
@@ -47,6 +84,13 @@ export default function Avatar() {
   const [showHistory, setShowHistory] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [explanation, setExplanation] = useState(null);
+  const [specificQuestion, setSpecificQuestion] = useState('');
+  const [inputExpanded, setInputExpanded] = useState(false);
+  const [quickQuestions, setQuickQuestions] = useState([]);
+  const [smartButtonHighlighted, setSmartButtonHighlighted] = useState(false);
+  const [chatReply, setChatReply] = useState(null);
+  const [inputHighlighted, setInputHighlighted] = useState(false);
+  const [circledBox, setCircledBox] = useState(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
@@ -146,7 +190,7 @@ export default function Avatar() {
       points[points.length - 1]?.x || 0, points[points.length - 1]?.y || 0
     );
     lineGrad.addColorStop(0, '#DC2626');
-    lineGrad.addColorStop(0.5, '#9333EA');
+    lineGrad.addColorStop(0.5, '#E74C3C');
     lineGrad.addColorStop(1, '#DC2626');
 
     ctx.strokeStyle = lineGrad;
@@ -242,6 +286,21 @@ export default function Avatar() {
       audioRef.current = new Audio(fullAudioUrl);
       subtitleScheduleRef.current = newSubtitleSchedule;
 
+      audioRef.current.addEventListener('loadedmetadata', () => {
+        if (!audioRef.current) return;
+        const totalDuration = audioRef.current.duration;
+        if (totalDuration && subtitleScheduleRef.current && subtitleScheduleRef.current.length > 0) {
+          const lastChunk = subtitleScheduleRef.current[subtitleScheduleRef.current.length - 1];
+          const totalEstimated = lastChunk.to || 1;
+          const scale = totalDuration / totalEstimated;
+          subtitleScheduleRef.current = subtitleScheduleRef.current.map(s => ({
+            from: s.from * scale,
+            to: s.to * scale,
+            text: s.text
+          }));
+        }
+      });
+
       audioRef.current.addEventListener('timeupdate', () => {
         if (!audioRef.current) return;
         const current = audioRef.current.currentTime;
@@ -254,6 +313,12 @@ export default function Avatar() {
       audioRef.current.addEventListener('ended', () => {
         setIsPlaying(false);
         setCurrentSubtitle('');
+        if (type === 'pre_written') {
+          if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current);
+          setAvatarState('listening');
+          setMainText('Circle what you need help with');
+          setSubtitleText('');
+        }
       });
 
       await audioRef.current.play();
@@ -279,8 +344,9 @@ export default function Avatar() {
     setShowFullScreen(true);
     setShowHistory(false);
     setAvatarState('greeting');
-    setMainText(`Hi, naan Monica\nUnga AI Spoken English\nPartner`);
+    setMainText(`Hi, I am Monica✨\nYour AI Assistant`);
     setSubtitleText('Hold and draw a circle around anything you need help with');
+    setQuickQuestions(getQuickQuestions(window.location.pathname));
     playAudio('pre_written', null);
 
     if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current);
@@ -288,7 +354,7 @@ export default function Avatar() {
       setAvatarState('listening');
       setMainText('Circle what you need help with');
       setSubtitleText('');
-    }, 1500);
+    }, 5500);
   };
 
   const closeFullScreen = () => {
@@ -300,6 +366,13 @@ export default function Avatar() {
     setSessionId(null);
     setRetryCount(0);
     setSmartAction(null);
+    setSpecificQuestion('');
+    setInputExpanded(false);
+    setInputHighlighted(false);
+    setCircledBox(null);
+    setQuickQuestions([]);
+    setSmartButtonHighlighted(false);
+    setChatReply(null);
     if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current);
     if (audioRef.current) {
       audioRef.current.pause();
@@ -354,7 +427,7 @@ export default function Avatar() {
   };
 
   const extractContentFromCircle = () => {
-    if (circlePoints.current.length < 10) {
+    if (circlePoints.current.length < 5) {
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -364,8 +437,9 @@ export default function Avatar() {
       return;
     }
     const box = getBoundingBox(circlePoints.current);
+    setCircledBox(box);
 
-    const allElements = document.querySelectorAll('p, h1, h2, h3, span, button, div');
+    const allElements = document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, button, a, li, label, div, input, textarea');
     const captured = [];
 
     allElements.forEach(el => {
@@ -373,26 +447,77 @@ export default function Avatar() {
         return;
       }
       const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      if (rect.width > window.innerWidth * 0.95 && rect.height > window.innerHeight * 0.95) return;
+
       const elCenterX = rect.left + rect.width / 2;
       const elCenterY = rect.top + rect.height / 2;
-      if (
+
+      const isInside = (
         elCenterX >= box.left &&
         elCenterX <= box.right &&
         elCenterY >= box.top &&
-        elCenterY <= box.bottom &&
-        el.innerText?.trim() &&
-        el.children.length === 0
-      ) {
-        captured.push(el.innerText.trim());
+        elCenterY <= box.bottom
+      ) || (
+        rect.left >= box.left && rect.right <= box.right &&
+        rect.top >= box.top && rect.bottom <= box.bottom
+      );
+
+      if (isInside) {
+        // Handle input / textarea value
+        if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.value?.trim()) {
+          captured.push(el.value.trim());
+          return;
+        }
+
+        // Collect text from direct text nodes if element has children
+        let directText = '';
+        el.childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+            directText += ' ' + node.textContent.trim();
+          }
+        });
+
+        if (directText.trim()) {
+          captured.push(directText.trim());
+        } else if (el.children.length === 0 && el.innerText?.trim()) {
+          captured.push(el.innerText.trim());
+        }
       }
     });
 
-    const capturedText = [...new Set(captured)].join(' ');
+    // Fallback: if no direct text captured, collect innerText of elements in box
+    if (captured.length === 0) {
+      allElements.forEach(el => {
+        if (el.closest('.avatar-fullscreen-overlay') || el.closest('.avatar-history-panel')) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0 || rect.width > window.innerWidth * 0.9) return;
+
+        const elCenterX = rect.left + rect.width / 2;
+        const elCenterY = rect.top + rect.height / 2;
+        if (
+          elCenterX >= box.left && elCenterX <= box.right &&
+          elCenterY >= box.top && elCenterY <= box.bottom &&
+          el.innerText?.trim()
+        ) {
+          captured.push(el.innerText.trim());
+        }
+      });
+    }
+
+    // Filter duplicates and clean up
+    const uniqueCaptured = [...new Set(captured.filter(t => t.length > 0))];
+    const capturedText = uniqueCaptured.join(' ');
+
     if (capturedText) {
       setCapturedContent(capturedText);
+      setQuickQuestions(getQuickQuestions(window.location.pathname, capturedText));
       setAvatarState('confirming');
       setMainText('Is this what you need help with?');
       setSubtitleText(`"${capturedText.slice(0, 60)}${capturedText.length > 60 ? '...' : ''}"`);
+      setInputExpanded(true);
+      setInputHighlighted(true);
+      setTimeout(() => setInputHighlighted(false), 4000);
       playAudio('confirming');
     } else {
       const canvas = canvasRef.current;
@@ -411,6 +536,7 @@ export default function Avatar() {
     setMainText('Circle what you need help with');
     setSubtitleText('');
     setCapturedContent('');
+    setCircledBox(null);
     const canvas = canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
@@ -436,6 +562,7 @@ export default function Avatar() {
           },
           body: JSON.stringify({
             selected_content: capturedContent,
+            specific_question: specificQuestion || null,
             screen_context: screenContext,
             language: user?.preferred_language || 'english',
             session_id: sessionId
@@ -449,6 +576,15 @@ export default function Avatar() {
       setMainText(data.simplified_text);
       setSubtitleText('');
       setSmartAction(data.smart_action || null);
+      setChatReply(data.chat_reply || null);
+
+      // Highlight smart action button during explanation
+      if (data.smart_action) {
+        setTimeout(() => setSmartButtonHighlighted(true), 2000);
+        setTimeout(() => setSmartButtonHighlighted(false), 4000);
+        setTimeout(() => setSmartButtonHighlighted(true), 6000);
+      }
+
       playAudio('ai_generated', data.audio_url, data.subtitle_schedule || []);
       fetchHistory();
     } catch (err) {
@@ -502,6 +638,44 @@ export default function Avatar() {
       handleThatHelped();
     } catch (err) {
       console.error('Smart action error:', err);
+    }
+  };
+
+  const handleInsertReply = () => {
+    // Dispatch custom event that chat screen listens to
+    window.dispatchEvent(new CustomEvent('avatarInsertReply', {
+      detail: { text: chatReply }
+    }));
+    handleThatHelped();
+  };
+
+  const handleReprocessReply = async () => {
+    setAvatarState('thinking');
+    setMainText('Making it more professional...');
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/avatar/reprocess-reply`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            original_reply: chatReply,
+            session_id: sessionId,
+            language: user?.preferred_language || 'english'
+          })
+        }
+      );
+      const data = await res.json();
+      setChatReply(data.reply);
+      setAvatarState('explaining');
+      setMainText(explanation.simplified_text);
+    } catch (err) {
+      console.error('Reprocess reply error:', err);
+      setAvatarState('explaining');
+      setMainText(explanation?.simplified_text || '');
     }
   };
 
@@ -583,7 +757,7 @@ export default function Avatar() {
                 />
               </div>
               <div>
-                <p className="font-bold text-[15px] text-white tracking-wide">Monica</p>
+                <p className="font-bold text-[15px] text-white tracking-wide">Monica✨</p>
                 <p className="text-[12px]" style={{ color: 'rgba(255,255,255,0.5)' }}>Your AI assistant</p>
               </div>
             </div>
@@ -640,7 +814,8 @@ export default function Avatar() {
           style={{
             background: isListeningState
               ? 'rgba(0, 0, 0, 0.08)'
-              : 'linear-gradient(180deg, #0D0D12 0%, #140a10 30%, #1a0a0a 60%, #0D0D12 100%)',
+              : 'rgba(10, 10, 16, 0.82)',
+            backdropFilter: isListeningState ? 'none' : 'blur(4px)',
             fontFamily: "'Plus Jakarta Sans', sans-serif",
             transition: 'background 0.3s ease'
           }}
@@ -699,6 +874,27 @@ export default function Avatar() {
             </div>
           )}
 
+          {/* ── Highlight Box over the exact circled element on screen (Confirming state ONLY) ── */}
+          {circledBox && avatarState === 'confirming' && (
+            <div
+              className="absolute pointer-events-none transition-all duration-300 z-15"
+              style={{
+                left: `${Math.max(4, circledBox.left - 8)}px`,
+                top: `${Math.max(60, circledBox.top - 8)}px`,
+                width: `${Math.min(window.innerWidth - 12, (circledBox.right - circledBox.left) + 16)}px`,
+                height: `${Math.min(window.innerHeight - 80, (circledBox.bottom - circledBox.top) + 16)}px`,
+                border: '3px dashed #E74C3C',
+                borderRadius: '16px',
+                boxShadow: '0 0 24px rgba(231, 76, 60, 0.85), inset 0 0 16px rgba(231, 76, 60, 0.2)',
+                background: 'rgba(231, 76, 60, 0.08)'
+              }}
+            >
+              <div className="absolute -top-3 left-4 bg-[#E74C3C] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md tracking-wider uppercase">
+                Selected Content
+              </div>
+            </div>
+          )}
+
           {/* ── Top Bar with back button + progress bar + cancel option (z-30 to sit on top of canvas) ── */}
           <div
             className="absolute top-0 left-0 right-0 flex items-center justify-between gap-3 px-4 pt-12 pb-3 z-30"
@@ -725,8 +921,8 @@ export default function Avatar() {
                 className="h-full rounded-full transition-all duration-500 ease-out"
                 style={{
                   width: `${progressPercent}%`,
-                  background: 'linear-gradient(90deg, #7C3AED 0%, #9333EA 50%, #A855F7 100%)',
-                  boxShadow: '0 0 8px rgba(147, 51, 234, 0.5)'
+                  background: 'linear-gradient(90deg, #E74C3C 0%, #C0392B 100%)',
+                  boxShadow: '0 0 8px rgba(231, 76, 60, 0.5)'
                 }}
               />
             </div>
@@ -769,10 +965,10 @@ export default function Avatar() {
 
           {/* ── Content for all other states (z-20 positioned layout) ── */}
           {!isListeningState && (
-            <div className="absolute inset-0 pt-28 pb-12 px-6 flex flex-col justify-between z-20 pointer-events-none">
+            <div className="absolute inset-0 pt-20 pb-6 px-4 flex flex-col justify-between z-20 pointer-events-auto overflow-y-auto scrollbar-hide">
               
               {/* Avatar Center Content */}
-              <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="flex-1 flex flex-col items-center justify-center my-auto py-2 relative w-full max-w-sm mx-auto">
                 {/* Red gradient glow behind avatar */}
                 <div
                   style={{
@@ -792,10 +988,10 @@ export default function Avatar() {
                 />
 
                 {/* Avatar image */}
-                <div className="relative mb-6" style={{ zIndex: 2 }}>
+                <div className="relative mb-4 flex-shrink-0" style={{ zIndex: 2 }}>
                   <img
                     src={AVATAR_IMAGES[avatarState] || AVATAR_IMAGES.idle}
-                    className="w-56 h-56 object-contain"
+                    className="w-40 h-40 object-contain max-h-[28vh]"
                     alt={`Monica ${avatarState}`}
                     style={{
                       filter: 'drop-shadow(0 8px 32px rgba(220,38,38,0.25))',
@@ -822,76 +1018,79 @@ export default function Avatar() {
                   )}
                 </div>
 
-                {/* Main text */}
-                <p
-                  className="text-white text-center font-bold tracking-tight mb-2 transition-all duration-300"
-                  style={{
-                    fontSize: '24px',
-                    maxWidth: '300px',
-                    zIndex: 2,
-                    whiteSpace: 'pre-line',
-                    lineHeight: '1.25',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.5)'
-                  }}
-                >
-                  {mainText}
-                </p>
-
-                {subtitleText && (
+                {/* Full AI Explanation text (Only displayed AFTER audio finishes speaking) */}
+                {!isPlaying && mainText && (
                   <p
-                    className="text-center text-[14px] leading-relaxed transition-all duration-300 font-medium"
+                    className="text-center font-bold tracking-tight mb-2 transition-all duration-300 w-full"
                     style={{
-                      maxWidth: '280px',
-                      color: 'rgba(255,255,255,0.6)',
+                      fontSize: mainText.length > 80 ? '15px' : mainText.length > 40 ? '17px' : '20px',
+                      color: '#FFFFFF',
+                      textShadow: '0 2px 12px rgba(0,0,0,0.9)',
+                      maxWidth: '340px',
                       zIndex: 2,
-                      textShadow: '0 1px 4px rgba(0,0,0,0.4)'
+                      whiteSpace: 'pre-line',
+                      lineHeight: '1.45'
+                    }}
+                  >
+                    {mainText}
+                  </p>
+                )}
+
+                {subtitleText && !isPlaying && (
+                  <p
+                    className="text-center leading-relaxed transition-all duration-300"
+                    style={{
+                      fontSize: '14px',
+                      color: 'rgba(255,255,255,0.75)',
+                      textShadow: '0 1px 6px rgba(0,0,0,0.7)',
+                      maxWidth: '280px',
+                      zIndex: 2
                     }}
                   >
                     {subtitleText}
                   </p>
                 )}
 
-                {/* Tap to Play button */}
-                {isPlaying !== undefined && audioRef.current && (
-                  <button
-                    onClick={toggleAudioPlayPause}
-                    className="mt-4 flex items-center gap-2 rounded-full px-4 py-2 cursor-pointer active:scale-95 transition-all pointer-events-auto"
-                    style={{
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      zIndex: 2
-                    }}
-                  >
-                    {isPlaying ? (
-                      <Pause size={14} className="text-white" />
-                    ) : (
-                      <Play size={14} className="text-white" style={{ marginLeft: '2px' }} />
-                    )}
-                    <span className="text-white text-[12px] font-medium">
-                      {isPlaying ? 'Playing...' : 'Tap to Play'}
-                    </span>
-                  </button>
-                )}
-
+                {/* Synced Subtitle Ticker with Red Highlighted Words (Only displayed WHILE speaking) */}
                 {isPlaying && currentSubtitle && (
-                  <div
-                    className="mt-4 rounded-xl px-4 py-3 max-w-xs"
-                    style={{
-                      background: 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      zIndex: 2,
-                      animation: 'fade-in-up 0.5s ease forwards'
-                    }}
-                  >
-                    <p className="text-white text-[13px] text-center leading-relaxed font-medium">
-                      {currentSubtitle}
-                    </p>
+                  <div className="w-full max-w-sm mx-auto mt-2 relative pointer-events-auto" style={{ zIndex: 2 }}>
+                    <div
+                      className="rounded-2xl px-4 py-3 text-center transition-all duration-300"
+                      style={{
+                        background: 'rgba(0,0,0,0.7)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1.5px solid rgba(231,76,60,0.5)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.8), 0 0 16px rgba(231,76,60,0.25)'
+                      }}
+                    >
+                      <p
+                        className="leading-relaxed font-bold tracking-wide"
+                        style={{
+                          fontSize: '17px',
+                          color: '#FFFFFF',
+                          lineHeight: '1.55'
+                        }}
+                      >
+                        {currentSubtitle.split(' ').map((word, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-block mx-0.5"
+                            style={{
+                              color: '#E74C3C',
+                              textShadow: '0 0 8px rgba(231,76,60,0.8)'
+                            }}
+                          >
+                            {word}{' '}
+                          </span>
+                        ))}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Bottom Actions Area */}
-              <div className="flex flex-col gap-3 z-20 pointer-events-auto">
+              <div className="w-full max-w-sm mx-auto mt-4 flex flex-col gap-3 flex-shrink-0 z-20 pointer-events-auto pb-4">
                 {/* Greeting: Hello CTA */}
                 {avatarState === 'greeting' && (
                   <button
@@ -903,8 +1102,8 @@ export default function Avatar() {
                     }}
                     className="w-full text-white text-[16px] font-bold py-4 rounded-2xl cursor-pointer active:scale-95 transition-all tracking-wide"
                     style={{
-                      background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 50%, #A855F7 100%)',
-                      boxShadow: '0 4px 20px rgba(147, 51, 234, 0.4)'
+                      background: 'linear-gradient(135deg, #E74C3C, #C0392B)',
+                      boxShadow: '0 4px 20px rgba(231, 76, 60, 0.4)'
                     }}
                   >
                     Hello!
@@ -912,42 +1111,120 @@ export default function Avatar() {
                 )}
 
                 {avatarState === 'confirming' && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleRetryCircle}
-                      className="flex-1 text-white text-[13px] font-semibold py-3.5 rounded-2xl cursor-pointer active:scale-95 transition-all tracking-wide"
+                  <div className="flex flex-col gap-3">
+                    {/* Expandable specific question input */}
+                    <div
+                      className="rounded-2xl overflow-hidden transition-all duration-300 pointer-events-auto"
                       style={{
-                        border: '1px solid rgba(220, 38, 38, 0.4)',
-                        background: 'rgba(220, 38, 38, 0.08)',
+                        background: 'rgba(255,255,255,0.12)',
+                        backdropFilter: 'blur(8px)',
+                        border: inputHighlighted || specificQuestion
+                          ? '2px solid #E74C3C'
+                          : '1px solid rgba(255,255,255,0.2)',
+                        boxShadow: inputHighlighted || specificQuestion
+                          ? '0 0 16px rgba(231, 76, 60, 0.6)'
+                          : 'none',
+                        maxHeight: inputExpanded || specificQuestion ? '160px' : '44px'
                       }}
                     >
-                      Circle again
-                    </button>
-                    <button
-                      onClick={handleConfirmContent}
-                      className="flex-1 text-white text-[13px] font-bold py-3.5 rounded-2xl cursor-pointer active:scale-95 transition-all tracking-wide"
-                      style={{
-                        background: 'linear-gradient(135deg, #DC2626 0%, #9333EA 100%)',
-                        boxShadow: '0 4px 16px rgba(220, 38, 38, 0.35)'
-                      }}
-                    >
-                      Yes, explain this
-                    </button>
+                      <div className="flex items-center px-3 py-2.5 gap-2">
+                        <MessageSquare size={14} className="text-white flex-shrink-0" style={{ opacity: 0.6 }} />
+                        <input
+                          type="text"
+                          value={specificQuestion}
+                          onChange={e => {
+                            setSpecificQuestion(e.target.value);
+                            if (e.target.value) setInputExpanded(true);
+                          }}
+                          onFocus={() => setInputExpanded(true)}
+                          onBlur={() => !specificQuestion && setInputExpanded(false)}
+                          placeholder="Ask something specific... (optional)"
+                          className="flex-1 bg-transparent text-white text-[12px] outline-none"
+                          style={{ '::placeholder': { color: 'rgba(255,255,255,0.4)' } }}
+                        />
+                        {specificQuestion && (
+                          <button
+                            onClick={() => {
+                              setSpecificQuestion('');
+                              setInputExpanded(false);
+                              setInputHighlighted(false);
+                            }}
+                            className="text-white cursor-pointer" style={{ opacity: 0.6 }}
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                      {(inputExpanded || specificQuestion) && (
+                        <div className="px-3 pb-2.5 flex gap-2 flex-wrap">
+                          {quickQuestions.map(q => (
+                            <button
+                              key={q}
+                              onClick={() => {
+                                setSpecificQuestion(q);
+                                setInputExpanded(true);
+                                setInputHighlighted(true);
+                                setTimeout(() => setInputHighlighted(false), 2000);
+                              }}
+                              className="text-[10px] text-white px-2.5 py-1 rounded-full cursor-pointer transition-all"
+                              style={{
+                                background: specificQuestion === q
+                                  ? '#E74C3C'
+                                  : 'rgba(231,76,60,0.3)',
+                                border: '1px solid rgba(231,76,60,0.6)',
+                                boxShadow: specificQuestion === q
+                                  ? '0 2px 8px rgba(231,76,60,0.5)'
+                                  : 'none'
+                              }}
+                            >
+                              {q}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Main action buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleRetryCircle}
+                        className="flex-1 text-white text-[13px] font-semibold py-3.5 rounded-2xl cursor-pointer active:scale-95 transition-all tracking-wide"
+                        style={{
+                          border: '1px solid rgba(220, 38, 38, 0.4)',
+                          background: 'rgba(220, 38, 38, 0.08)',
+                        }}
+                      >
+                        Circle again
+                      </button>
+                      <button
+                        onClick={handleConfirmContent}
+                        className="flex-1 text-white text-[13px] font-bold py-3.5 rounded-2xl cursor-pointer active:scale-95 transition-all tracking-wide"
+                        style={{
+                          background: 'linear-gradient(135deg, #E74C3C, #C0392B)',
+                          boxShadow: '0 4px 16px rgba(231, 76, 60, 0.35)'
+                        }}
+                      >
+                        {specificQuestion ? 'Ask this' : 'Explain this'}
+                      </button>
+                    </div>
                   </div>
                 )}
 
                 {avatarState === 'explaining' && (
                   <div className="flex flex-col gap-2">
+                    {/* Primary action */}
                     <button
                       onClick={handleThatHelped}
                       className="w-full text-white text-[14px] font-bold py-3.5 rounded-2xl cursor-pointer active:scale-95 transition-all tracking-wide"
                       style={{
-                        background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 50%, #A855F7 100%)',
-                        boxShadow: '0 4px 16px rgba(147, 51, 234, 0.4)'
+                        background: 'linear-gradient(135deg, #E74C3C, #C0392B)',
+                        boxShadow: '0 4px 16px rgba(231, 76, 60, 0.4)'
                       }}
                     >
                       That helped ✓
                     </button>
+
+                    {/* Re-say and Re-explain */}
                     <div className="flex gap-2">
                       <button
                         onClick={handleResay}
@@ -971,7 +1248,63 @@ export default function Avatar() {
                       </button>
                     </div>
 
-                    {smartAction && (
+                    {/* Smart action button — context specific */}
+                    {smartAction && smartAction.label && (
+                      <button
+                        onClick={handleSmartAction}
+                        className="w-full text-[13px] font-bold py-3.5 rounded-2xl cursor-pointer active:scale-95 transition-all duration-300"
+                        style={{
+                          background: smartButtonHighlighted ? '#DC2626' : 'rgba(255,255,255,0.12)',
+                          border: smartButtonHighlighted ? 'none' : '1px solid rgba(255,255,255,0.25)',
+                          color: '#FFFFFF',
+                          boxShadow: smartButtonHighlighted ? '0 4px 16px rgba(220,38,38,0.4)' : 'none',
+                          transform: smartButtonHighlighted ? 'scale(1.03)' : 'scale(1)'
+                        }}
+                      >
+                        {smartButtonHighlighted ? '👆 ' : ''}{smartAction.label}
+                      </button>
+                    )}
+
+                    {/* Chat reply scenario */}
+                    {chatReply && (
+                      <div className="flex flex-col gap-2 mt-1">
+                        <div
+                          className="rounded-xl px-3 py-2.5"
+                          style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.2)'
+                          }}
+                        >
+                          <p className="text-white text-[10px] mb-1" style={{ opacity: 0.6 }}>Suggested reply:</p>
+                          <p className="text-white text-[12px] leading-relaxed">"{chatReply}"</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleInsertReply}
+                            className="flex-1 text-white text-[12px] font-bold py-3 rounded-2xl cursor-pointer active:scale-95 transition-all"
+                            style={{
+                              background: 'linear-gradient(135deg, #E74C3C, #C0392B)',
+                              boxShadow: '0 4px 12px rgba(231, 76, 60, 0.3)'
+                            }}
+                          >
+                            ✓ Use this reply
+                          </button>
+                          <button
+                            onClick={handleReprocessReply}
+                            className="flex-1 text-white text-[12px] py-3 rounded-2xl cursor-pointer active:scale-95 transition-all"
+                            style={{
+                              border: '1px solid rgba(220, 38, 38, 0.4)',
+                              background: 'rgba(220, 38, 38, 0.08)',
+                            }}
+                          >
+                            Make it professional
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Other smart actions */}
+                    {smartAction && smartAction.type !== 'apply_for_job' && !chatReply && (
                       <button
                         onClick={handleSmartAction}
                         className="w-full text-white text-[13px] font-semibold py-3 rounded-2xl mt-1 cursor-pointer active:scale-95 transition-all tracking-wide"
@@ -1000,7 +1333,7 @@ export default function Avatar() {
                         className="w-1 rounded-full origin-bottom"
                         style={{
                           height: `${h * 3}px`,
-                          background: 'linear-gradient(180deg, #DC2626 0%, #9333EA 100%)',
+                          background: '#E74C3C',
                           animation: `soundbar 0.8s ease-in-out infinite`,
                           animationDelay: `${i * 80}ms`
                         }}

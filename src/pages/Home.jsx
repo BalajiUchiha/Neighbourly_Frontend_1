@@ -41,7 +41,7 @@ const STORIES = [
 ];
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
-function Avatar({ name, photoUrl, size = 40, className = '' }) {
+function Avatar({ name, photoUrl, size = 40, className = '', onClick }) {
   const initials = name
     ? name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
     : '?';
@@ -52,13 +52,15 @@ function Avatar({ name, photoUrl, size = 40, className = '' }) {
     return (
       <img src={getImageUrl(photoUrl)} alt={name}
         className={`rounded-full object-cover flex-shrink-0 ${className}`}
-        style={{ width: size, height: size }} />
+        style={{ width: size, height: size }}
+        onClick={onClick} />
     );
   }
   return (
     <div className={`rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 ${className}`}
       style={{ width: size, height: size, fontSize: size * 0.36,
-        background: `linear-gradient(135deg, ${palette[ci]}, ${palette[(ci+2)%palette.length]})` }}>
+        background: `linear-gradient(135deg, ${palette[ci]}, ${palette[(ci+2)%palette.length]})` }}
+      onClick={onClick}>
       {initials}
     </div>
   );
@@ -309,7 +311,9 @@ function PostCard({ post, isOwnPost, onLike, onSave }) {
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-3">
-          <Avatar name={post.poster?.name} photoUrl={post.poster?.photo_url} size={40} />
+          <Avatar name={post.poster?.name} photoUrl={post.poster?.photo_url} size={40}
+            className="cursor-pointer"
+            onClick={() => navigate(`/profile/${post.poster?.id}`)} />
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-[14px] text-text-primary">{post.poster?.name}</span>
